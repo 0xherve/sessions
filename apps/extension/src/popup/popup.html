@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sessions</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Sessions</h1>
+      <span id="status" class="status" data-state="offline">Offline</span>
+    </header>
+
+    <main>
+      <section id="view-unpaired" hidden>
+        <p class="hint">Run <code>sessions pair</code> in your terminal, then paste the code here.</p>
+        <label for="code">Pairing code</label>
+        <input id="code" type="text" autocomplete="off" spellcheck="false" />
+        <button id="pair" type="button">Pair</button>
+      </section>
+
+      <section id="view-confirm" hidden>
+        <p class="hint">Check this matches your terminal.</p>
+        <output id="sas" class="sas"></output>
+        <div class="row">
+          <button id="reject" type="button" class="secondary">Doesn't match</button>
+          <button id="confirm" type="button">Matches</button>
+        </div>
+      </section>
+
+      <section id="view-ready" hidden>
+        <p class="hint">Agents can only see what you share.</p>
+        <button id="share-tab" type="button">Share this tab</button>
+        <button id="share-group" type="button" class="secondary">Share this tab group</button>
+        <ul id="shared" class="shared"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
