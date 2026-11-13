@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Sessions</title>
+  <rect width="128" height="128" rx="28" fill="#513a7a"/>
+  <g fill="#f4f1f8" transform="translate(64 64) scale(0.75) translate(-64 -64)">
+    <path d="M32 22h64a10 10 0 0 1 10 10v8a10 10 0 0 1-10 10H60v6a10 10 0 0 1-10 10H32a10 10 0 0 1-10-10V32a10 10 0 0 1 10-10z"/>
+    <path d="M96 106H32a10 10 0 0 1-10-10v-8a10 10 0 0 1 10-10h36v-6a10 10 0 0 1 10-10h18a10 10 0 0 1 10 10v24a10 10 0 0 1-10 10z"/>
+  </g>
+</svg>

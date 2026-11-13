@@ -22,3 +22,4 @@ if (!result.success) {
 await cp("manifest.json", `${out}/manifest.json`);
 await cp("src/popup/popup.html", `${out}/popup.html`);
 await cp("src/popup/popup.css", `${out}/popup.css`);
+await cp("icons", `${out}/icons`, { recursive: true });
