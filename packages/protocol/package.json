@@ -6,6 +6,7 @@
     ".": "./src/index.ts",
     "./constants": "./src/constants.ts",
     "./jsonrpc": "./src/jsonrpc.ts",
-    "./methods": "./src/methods.ts"
+    "./methods": "./src/methods.ts",
+    "./peer": "./src/peer.ts"
   }
 }
