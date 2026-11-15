@@ -160,3 +160,18 @@ input:focus-visible {
 section[hidden] {
   display: none;
 }
+
+h2 {
+  margin: 20px 0 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}

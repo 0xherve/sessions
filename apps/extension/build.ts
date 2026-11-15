@@ -6,7 +6,10 @@ await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 
 const result = await Bun.build({
-  entrypoints: ["src/background/background.ts", "src/popup/popup.ts"],
+  entrypoints: [
+    "src/background/background.ts",
+    "src/popup/popup.ts",
+  ],
   outdir: out,
   naming: "[name].js",
   target: "browser",

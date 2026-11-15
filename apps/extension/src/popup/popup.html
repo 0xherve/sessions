@@ -12,6 +12,8 @@
       <span id="status" class="status" data-state="offline">Offline</span>
     </header>
 
+    <p id="error" class="banner" role="alert" hidden></p>
+
     <main>
       <section id="view-unpaired" hidden>
         <p class="hint">Run <code>sessions pair</code> in your terminal, then paste the code here.</p>
@@ -33,7 +35,16 @@
         <p class="hint">Agents can only see what you share.</p>
         <button id="share-tab" type="button">Share this tab</button>
         <button id="share-group" type="button" class="secondary">Share this tab group</button>
+
+        <h2>Shared sessions</h2>
         <ul id="shared" class="shared"></ul>
+
+        <h2>Sites agents may use</h2>
+        <ul id="origins" class="shared"></ul>
+        <div class="inline">
+          <input id="origin" type="text" autocomplete="off" spellcheck="false" placeholder="example.com" />
+          <button id="allow" type="button" class="secondary">Allow</button>
+        </div>
       </section>
     </main>
 
