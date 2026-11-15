@@ -28,15 +28,6 @@ export type CdpSendParams = {
   params?: Record<string, unknown>;
 };
 
-export type ServerMethods = {
-  "tabs.list": { params: { sessionId: string }; result: Tab[] };
-  "tabs.open": { params: OpenTabParams; result: Tab };
-  "tabs.close": { params: { sessionId: string; tabId: number }; result: null };
-  "cdp.attach": { params: { sessionId: string; tabId: number }; result: null };
-  "cdp.detach": { params: { sessionId: string; tabId: number }; result: null };
-  "cdp.send": { params: CdpSendParams; result: unknown };
-};
-
 export type PairParams = {
   profile: Profile;
   publicKey: string;
@@ -61,18 +52,4 @@ export type CdpDetachedParams = {
   sessionId: string;
   tabId: number;
   reason: string;
-};
-
-export type ExtensionMethods = {
-  pair: { params: PairParams; result: null };
-  hello: { params: HelloParams; result: HelloResult };
-  auth: { params: AuthParams; result: null };
-};
-
-export type ExtensionNotifications = {
-  "session.shared": SessionSharedParams;
-  "session.unshared": { sessionId: string };
-  "cdp.event": CdpEventParams;
-  "cdp.detached": CdpDetachedParams;
-  "tabs.closed": { sessionId: string; tabId: number };
 };
