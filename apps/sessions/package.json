@@ -1,4 +1,8 @@
 {
   "name": "sessions",
-  "type": "module"
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@sessions/protocol": "workspace:*"
+  }
 }

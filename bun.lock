@@ -16,6 +16,9 @@
     },
     "apps/sessions": {
       "name": "sessions",
+      "dependencies": {
+        "@sessions/protocol": "workspace:*",
+      },
     },
     "packages/protocol": {
       "name": "@sessions/protocol",
