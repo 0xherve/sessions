@@ -13,6 +13,9 @@
     },
     "apps/extension": {
       "name": "@sessions/extension",
+      "dependencies": {
+        "@sessions/protocol": "workspace:*",
+      },
     },
     "apps/sessions": {
       "name": "sessions",

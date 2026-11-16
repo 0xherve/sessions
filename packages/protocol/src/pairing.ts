@@ -45,26 +45,47 @@ export const formatCode = (code: string) =>
   `${code.slice(0, 4)}-${code.slice(4)}`;
 
 export type Identity = {
+  jwk: JsonWebKey;
   publicKey: string;
-  /** Proof, produced with the private key, that only this identity can make. */
   sign(message: string): Promise<string>;
 };
 
-export async function identity(): Promise<Identity> {
-  const pair = await subtle.generateKey(
+const importPublicRaw = async (jwk: JsonWebKey) => {
+  const key = await subtle.importKey(
+    "jwk",
+    { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
     { name: "ECDSA", namedCurve: "P-256" },
     false,
-    ["sign", "verify"],
+    [],
   );
-  const publicKey = toBase64Url(
-    new Uint8Array(await subtle.exportKey("raw", pair.publicKey)),
+  return toBase64Url(new Uint8Array(await subtle.exportKey("raw", key)));
+};
+
+export async function identity(stored?: JsonWebKey): Promise<Identity> {
+  const jwk = (stored ?? await subtle.exportKey(
+    "jwk",
+    (
+      await subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign", "verify"],
+      )
+    ).privateKey,
+  )) as JsonWebKey;
+  const privateKey = await subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign"],
   );
   return {
-    publicKey,
+    jwk,
+    publicKey: await importPublicRaw(jwk),
     async sign(message) {
       const signature = await subtle.sign(
         { name: "ECDSA", hash: "SHA-256" },
-        pair.privateKey,
+        privateKey,
         text.encode(message),
       );
       return toBase64Url(new Uint8Array(signature));
