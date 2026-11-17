@@ -2,24 +2,21 @@ import {
   ErrorCode,
   RpcError,
   Pairing,
-  createPeer,
   methodNotFound,
+  createPeer,
   type Peer,
   type Profile,
   type PairParams,
   type HelloParams,
   type AuthParams,
-  SERVICE_HOST,
-  SERVICE_PORT,
 } from "@sessions/protocol";
-import { loadBrowsers, saveBrowsers } from "./state";
+import { browsers, saveBrowsers } from "./state";
 
 const codeTtl = 10 * 60_000;
 
-const browsers = await loadBrowsers();
 let pending: { code: string; expires: number } | undefined;
 
-type Connection = {
+export type Connection = {
   peer?: Peer;
   profileId?: string;
   challenge?: string;
@@ -46,7 +43,7 @@ const pairBegin = (): string => mintCode();
 const pair = (connection: Connection, params: PairParams) => {
   takeCode(params.code);
   browsers[params.profile.id] = { profile: params.profile, publicKey: params.publicKey };
-  void saveBrowsers(browsers);
+  void saveBrowsers();
   connection.profileId = params.profile.id;
   console.log(`paired: ${nameOf(params.profile)}`);
   return null;
@@ -71,33 +68,15 @@ const auth = async (connection: Connection, params: AuthParams) => {
   return null;
 };
 
-const routes: Record<string, (connection: Connection, params: any) => unknown> = {
+export const routes: Record<string, (connection: Connection, params: any) => unknown> = {
   "pair.begin": pairBegin,
   pair,
   hello,
   auth,
 };
 
-Bun.serve<Connection>({
-  port: SERVICE_PORT,
-  hostname: SERVICE_HOST,
-  fetch: (request, server) =>
-    server.upgrade(request, { data: {} as Connection })
-      ? undefined
-      : new Response("Sessions service — for browsers and agents", { status: 404 }),
-  websocket: {
-    message(ws, data) {
-      const connection = ws.data;
-      connection.peer ??= createPeer((out) => ws.send(out), {
-        request: async (method, params) => {
-          const route = routes[method];
-          if (!route) throw methodNotFound(method);
-          return route(connection, params);
-        },
-      });
-      connection.peer.receive(data.toString());
-    },
-  },
-});
-
-console.log(`service listening on ${SERVICE_HOST}:${SERVICE_PORT}`);
+export const handle = async (connection: Connection, method: string, params: any) => {
+  const route = routes[method];
+  if (!route) throw methodNotFound(method);
+  return route(connection, params);
+};

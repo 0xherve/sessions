@@ -5,17 +5,17 @@ import type { Profile } from "@sessions/protocol";
 
 const stateFile = join(homedir(), ".sessions", "profiles.json");
 
-export async function loadBrowsers() {
+export type PairedBrowser = { profile: Profile; publicKey: string };
+
+export const browsers: Record<string, PairedBrowser> = await (async () => {
   try {
     return JSON.parse(await readFile(stateFile, "utf8"));
   } catch {
-    return {}; 
+    return {};
   }
-}
+})();
 
-export async function saveBrowsers(
-  browsers: Record<string, { profile: Profile; publicKey: string }>,
-) {
+export async function saveBrowsers() {
   await mkdir(join(homedir(), ".sessions"), { recursive: true });
   await writeFile(stateFile, JSON.stringify(browsers, null, 2));
 }

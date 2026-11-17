@@ -1,8 +1,16 @@
 {
   "name": "sessions",
+  "description": "Give agents controlled access to your browser",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "bun build src/cli/main.ts --compile --outfile dist/sessions"
+  },
   "dependencies": {
-    "@sessions/protocol": "workspace:*"
+    "@sessions/protocol": "workspace:*",
+    "commander": "^15.1.0"
+  },
+  "bin": {
+    "sessions": "dist/sessions"
   }
 }
