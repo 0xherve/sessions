@@ -18,8 +18,8 @@ export async function status(options: { json?: boolean }) {
     return;
   }
 
-  const names = Object.values(browsers).map(
-    (profile) => `${profile.browser} (${profile.id})`,
+  const names = Object.entries(browsers).map(
+    ([id, profile]) => `${profile.browser} (${id})`,
   );
   console.log(
     names.length

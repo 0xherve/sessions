@@ -1,5 +1,6 @@
 import {
   createPeer,
+  ErrorCode,
   PAIR_PORT,
   Pairing,
   type Peer,
@@ -8,6 +9,7 @@ import {
   SERVICE_HOST,
   SERVICE_PORT,
 } from "@sessions/protocol";
+import { getProfileId, saveProfileId } from "./storage";
 
 export type ConnectionEvents = {
   unpaired(): void;
@@ -49,10 +51,12 @@ export function startConnection(
   let trying = false;
 
   const authenticate = async (session: Peer) => {
-    const identity = await getIdentity();
+    const [identity, profileId] = await Promise.all([getIdentity(), getProfileId()]);
+    if (!profileId)
+      throw new RpcError(ErrorCode.Application, "not paired");
     const { challenge } = (await session.request(
       "hello",
-      { publicKey: identity.publicKey },
+      { profileId },
       REQUEST_TIMEOUT_MS,
     )) as { challenge: string };
     await session.request(
@@ -106,7 +110,7 @@ export function startConnection(
     const identity = await getIdentity();
     const opened = await openSocket(PAIR_PORT);
     try {
-      await opened.peer.request(
+      const paired = (await opened.peer.request(
         "pair",
         {
           profile: { browser: browserBrand() },
@@ -114,7 +118,8 @@ export function startConnection(
           code,
         },
         REQUEST_TIMEOUT_MS,
-      );
+      )) as { id: string };
+      await saveProfileId(paired.id);
     } finally {
       opened.socket.close();
     }

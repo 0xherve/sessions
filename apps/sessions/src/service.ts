@@ -1,29 +1,27 @@
 import {
-  type AuthParams,
   ErrorCode,
-  type HelloParams,
-  methodNotFound,
   Pairing,
   RpcError,
+  methodNotFound,
+  type AuthParams,
+  type HelloParams,
 } from "@sessions/protocol";
-import { loadBrowsers, type PairedBrowser } from "./state";
+import { loadBrowsers } from "./state";
 
 export type Connection = {
-  publicKey?: string;
+  profileId?: string;
   challenge?: string;
 };
 
 type Route = (connection: Connection, params: never) => unknown;
 
-const nameOf = (profile: PairedBrowser) => `${profile.browser} (${profile.id})`;
-
 const hello = async (connection: Connection, params: HelloParams) => {
-  if (typeof params.publicKey !== "string")
+  if (typeof params.profileId !== "string")
     throw new RpcError(ErrorCode.InvalidParams, "Bad hello");
-  const profile = (await loadBrowsers())[params.publicKey];
-  if (!profile)
+  const paired = (await loadBrowsers())[params.profileId];
+  if (!paired)
     throw new RpcError(ErrorCode.Application, "Unknown browser, pair first");
-  connection.publicKey = params.publicKey;
+  connection.profileId = params.profileId;
   connection.challenge = Pairing.nonce();
   return { challenge: connection.challenge };
 };
@@ -32,15 +30,15 @@ const auth = async (connection: Connection, params: AuthParams) => {
   if (typeof params.signature !== "string")
     throw new RpcError(ErrorCode.InvalidParams, "Bad auth");
   const challenge = connection.challenge;
-  const key = connection.publicKey;
+  const profileId = connection.profileId;
   connection.challenge = undefined;
-  if (!challenge || !key)
+  if (!challenge || !profileId)
     throw new RpcError(ErrorCode.Application, "Bad signature");
-  const profile = (await loadBrowsers())[key];
+  const paired = (await loadBrowsers())[profileId];
   const ok =
-    profile && (await Pairing.verify(key, params.signature, challenge));
+    paired && (await Pairing.verify(paired.public_key, params.signature, challenge));
   if (!ok) throw new RpcError(ErrorCode.Application, "Bad signature");
-  console.log(`connected: ${nameOf(profile)}`);
+  console.log(`connected: ${paired.browser} (${profileId})`);
   return null;
 };
 

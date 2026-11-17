@@ -8,6 +8,6 @@ export async function pair() {
   console.log("the code is valid for 10 minutes");
   const paired = await servePairing(code);
   if (paired)
-    console.log(`paired: ${paired.record.browser} (${paired.record.id})`);
+    console.log(`paired: ${paired.browser} (${paired.id})`);
   else console.log("no browser showed up");
 }

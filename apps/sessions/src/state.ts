@@ -1,12 +1,20 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { ID_LENGTH, type Profile } from "@sessions/protocol";
-import { nanoid } from "nanoid";
+import { PROFILE_ID_LENGTH, type Profile } from "@sessions/protocol";
+import { customAlphabet } from "nanoid";
+
+const idChars = customAlphabet(
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+  PROFILE_ID_LENGTH,
+);
 
 const stateFile = join(homedir(), ".sessions", "profiles.json");
 
-export type PairedBrowser = Profile & { id: string; paired_at: number };
+export type PairedBrowser = Profile & {
+  public_key: string;
+  paired_at: number;
+};
 
 export async function loadBrowsers(): Promise<Record<string, PairedBrowser>> {
   try {
@@ -24,14 +32,10 @@ export async function saveBrowsers(browsers: Record<string, PairedBrowser>) {
 export async function addBrowser(
   publicKey: string,
   profile: Profile,
-): Promise<PairedBrowser> {
+): Promise<string> {
   const browsers = await loadBrowsers();
-  const paired: PairedBrowser = {
-    ...profile,
-    id: nanoid(ID_LENGTH),
-    paired_at: Date.now(),
-  };
-  browsers[publicKey] = paired;
+  const id = idChars();
+  browsers[id] = { ...profile, public_key: publicKey, paired_at: Date.now() };
   await saveBrowsers(browsers);
-  return paired;
+  return id;
 }

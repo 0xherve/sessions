@@ -134,32 +134,6 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-.shared {
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.shared li {
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-}
-
 section[hidden] {
   display: none;
-}
-
-h2 {
-  margin: 20px 0 4px;
-  font-size: 12px;
-  font-weight: 650;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.inline {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
 }

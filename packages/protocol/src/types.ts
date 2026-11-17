@@ -27,7 +27,7 @@ export type CdpSendParams = {
   params?: Record<string, unknown>;
 };
 
-export type HelloParams = { publicKey: string };
+export type HelloParams = { profileId: string };
 export type HelloResult = { challenge: string };
 
 export type PairParams = {

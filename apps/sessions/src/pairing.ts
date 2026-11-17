@@ -11,9 +11,9 @@ import {
   RpcError,
   SERVICE_HOST,
 } from "@sessions/protocol";
-import { addBrowser, type PairedBrowser } from "./state";
+import { addBrowser } from "./state";
 
-type Paired = { publicKey: string; record: PairedBrowser };
+type Paired = { id: string; browser: string };
 
 export async function servePairing(code: string) {
   let paired: Paired | undefined;
@@ -52,11 +52,9 @@ export async function servePairing(code: string) {
                 ErrorCode.InvalidParams,
                 "Bad pairing request",
               );
-            paired = {
-              publicKey,
-              record: await addBrowser(publicKey, profile),
-            };
-            return null;
+            const id = await addBrowser(publicKey, profile);
+            paired = { id, browser: profile.browser };
+            return { id };
           },
         });
         void ws.data.peer.receive(String(data)).then(() => {
