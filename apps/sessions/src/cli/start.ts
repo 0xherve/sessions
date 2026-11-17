@@ -1,22 +1,27 @@
-import { createPeer } from "@sessions/protocol";
-import { SERVICE_HOST, SERVICE_PORT } from "@sessions/protocol";
-import { handle, type Connection } from "../service";
+import {
+  createPeer,
+  type Peer,
+  SERVICE_HOST,
+  SERVICE_PORT,
+} from "@sessions/protocol";
+import { type Connection, handle } from "../service";
 
 export async function start() {
-  Bun.serve<Connection>({
+  Bun.serve<Connection & { peer?: Peer }>({
     port: SERVICE_PORT,
     hostname: SERVICE_HOST,
     fetch: (request, server) =>
-      server.upgrade(request, { data: {} as Connection })
+      server.upgrade(request, { data: {} })
         ? undefined
-        : new Response("Sessions service — for browsers and agents", { status: 404 }),
+        : new Response("Sessions service — for browsers and agents", {
+            status: 404,
+          }),
     websocket: {
       message(ws, data) {
-        const connection = ws.data;
-        connection.peer ??= createPeer((out) => ws.send(out), {
-          request: (method, params) => handle(connection, method, params),
+        ws.data.peer ??= createPeer((out) => ws.send(out), {
+          request: (method, params) => handle(ws.data, method, params),
         });
-        connection.peer.receive(data.toString());
+        void ws.data.peer.receive(data.toString());
       },
     },
   });

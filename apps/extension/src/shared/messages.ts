@@ -1,6 +1,8 @@
 export type Action = { type: "pair"; code: string };
 
+export type Phase = "unpaired" | "connecting" | "paired" | "online";
+
 export type State = {
-  connection: "unpaired" | "connecting" | "online";
+  connection: Phase;
   error: string | null;
 };

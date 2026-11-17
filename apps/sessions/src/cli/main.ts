@@ -5,18 +5,13 @@ import { status } from "./status";
 
 const program = new Command();
 
-program.name("sessions")
+program
+  .name("sessions")
   .description("Give agents controlled access to your browser");
 
-program
-  .command("pair")
-  .description("mint a pairing code")
-  .action(pair);
+program.command("pair").description("pair a browser").action(pair);
 
-program
-  .command("start")
-  .description("run the service")
-  .action(start);
+program.command("start").description("run the service").action(start);
 
 program
   .command("status")

@@ -1,92 +1,130 @@
-import { createPeer, Pairing, SERVICE_HOST, SERVICE_PORT, type Peer } from "@sessions/protocol";
+import {
+  createPeer,
+  PAIR_PORT,
+  Pairing,
+  type Peer,
+  REQUEST_TIMEOUT_MS,
+  RpcError,
+  SERVICE_HOST,
+  SERVICE_PORT,
+} from "@sessions/protocol";
 
 export type ConnectionEvents = {
-  online(): void;
   unpaired(): void;
-  offline(): void;
+  connecting(): void;
+  paired(): void;
+  online(): void;
 };
 
-const RECONNECT_MS = 3000;
-
 const browserBrand = () =>
-  (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } })
-    .userAgentData?.brands.map((b) => b.brand)
+  (
+    navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }
+  ).userAgentData?.brands
+    .map((b) => b.brand)
     .find((b) => !/Chromium|Not.?A.?Brand/i.test(b))
     ?.replace(/^Google /, "") ?? "Chromium";
 
+const openSocket = (port: number) =>
+  new Promise<{ socket: WebSocket; peer: Peer }>((ok, fail) => {
+    const socket = new WebSocket(`ws://${SERVICE_HOST}:${port}`);
+    const peer = createPeer((out) => socket.send(out));
+    socket.onmessage = (event) => void peer.receive(String(event.data));
+    socket.onopen = () => ok({ socket, peer });
+    socket.onerror = () =>
+      fail(
+        new Error(
+          port === PAIR_PORT
+            ? "no pairing window is open — run sessions pair"
+            : "the service is offline",
+        ),
+      );
+  });
+
 export function startConnection(
-  identity: { profileId: string; identity: Pairing.Identity },
   events: ConnectionEvents,
+  getIdentity: () => Promise<Pairing.Identity>,
 ) {
   let socket: WebSocket | undefined;
   let peer: Peer | undefined;
-  let waiting = false;
+  let trying = false;
 
-  const handshake = async () => {
-    const session = peer!;
-    const { challenge } = (await session.request("hello", { profileId: identity.profileId }, 5000)) as {
-      challenge: string;
-    };
-    await session.request("auth", { signature: await identity.identity.sign(challenge) }, 5000);
+  const authenticate = async (session: Peer) => {
+    const identity = await getIdentity();
+    const { challenge } = (await session.request(
+      "hello",
+      { publicKey: identity.publicKey },
+      REQUEST_TIMEOUT_MS,
+    )) as { challenge: string };
+    await session.request(
+      "auth",
+      { signature: await identity.sign(challenge) },
+      REQUEST_TIMEOUT_MS,
+    );
   };
 
-  const connect = () =>
-    new Promise<void>((resolve) => {
-      if (socket && socket.readyState <= WebSocket.OPEN) return resolve();
-      const sock = new WebSocket(`ws://${SERVICE_HOST}:${SERVICE_PORT}`);
-      socket = sock;
-      sock.onopen = () => {
-        peer ??= createPeer((out) => sock.send(out));
-        resolve();
-      };
-      sock.onmessage = (event) => {
-        void peer!.receive(event.data as string);
-      };
-      sock.onclose = () => {
-        peer?.close(new Error("socket closed"));
-        peer = undefined;
-        if (!waiting) {
-          events.offline();
-          setTimeout(connect, RECONNECT_MS);
-        }
-      };
-      sock.onerror = () => sock.close();
-    });
-
-  const ready = async () => {
+  const tryService = async () => {
+    if (trying || socket) return;
+    trying = true;
     try {
-      await connect();
-      await handshake();
+      const opened = await openSocket(SERVICE_PORT);
+      try {
+        await authenticate(opened.peer);
+      } catch (error) {
+        opened.socket.close();
+        throw error;
+      }
+      socket = opened.socket;
+      peer = opened.peer;
+      socket.onclose = () => {
+        peer?.close(new Error("socket closed"));
+        socket = undefined;
+        peer = undefined;
+        events.paired();
+      };
       events.online();
-    } catch {
-      waiting = true;
-      events.unpaired();
+    } finally {
+      trying = false;
     }
   };
 
-  const pair = async (code: string) => {
+  const wake = async () => {
+    if (socket) return;
     try {
-      await connect();
-      const session = peer!;
-      await session.request(
+      await tryService();
+    } catch (error) {
+      if (error instanceof RpcError) events.unpaired();
+    }
+  };
+
+  const pair = async (input: string) => {
+    const code = Pairing.normalizeCode(input);
+    if (!code)
+      throw new Error(
+        "A pairing code has 8 letters and digits, like ABCD-1234.",
+      );
+    events.connecting();
+    const identity = await getIdentity();
+    const opened = await openSocket(PAIR_PORT);
+    try {
+      await opened.peer.request(
         "pair",
         {
-          profile: { id: identity.profileId, browser: browserBrand() },
-          publicKey: identity.identity.publicKey,
+          profile: { browser: browserBrand() },
+          publicKey: identity.publicKey,
           code,
         },
-        5000,
+        REQUEST_TIMEOUT_MS,
       );
-      await handshake();
-      waiting = false;
-      events.online();
-    } catch (error) {
-      waiting = true;
-      events.unpaired();
-      throw error;
+    } finally {
+      opened.socket.close();
+    }
+    events.paired();
+    try {
+      await tryService();
+    } catch {
+      events.paired();
     }
   };
 
-  void ready();
-  return { pair };
+  return { pair, wake };
 }

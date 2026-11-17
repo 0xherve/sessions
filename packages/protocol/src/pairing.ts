@@ -1,5 +1,4 @@
-const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const CODE_LENGTH = 8;
+import { CODE_ALPHABET, CODE_LENGTH } from "./constants";
 
 const subtle = globalThis.crypto.subtle;
 const text = new TextEncoder();
@@ -7,7 +6,10 @@ const text = new TextEncoder();
 const toBase64Url = (bytes: Uint8Array): string => {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 };
 
 const fromBase64Url = (value: string): Uint8Array<ArrayBuffer> => {
@@ -25,7 +27,10 @@ export const nonce = () => toBase64Url(randomBytes(16));
 
 /** 8 characters the user can read over a shoulder and type without mistakes. */
 export function generateCode(): string {
-  return Array.from(randomBytes(CODE_LENGTH), (b) => ALPHABET[b & 31]).join("");
+  return Array.from(
+    randomBytes(CODE_LENGTH),
+    (b) => CODE_ALPHABET[b & 31],
+  ).join("");
 }
 
 /** Canonical form of a typed code: dashes and spaces dropped, I/L read as 1 and O as 0. */
@@ -36,7 +41,7 @@ export function normalizeCode(input: string): string | undefined {
     .replace(/[IL]/g, "1")
     .replace(/O/g, "0");
   return code.length === CODE_LENGTH &&
-    [...code].every((c) => ALPHABET.includes(c))
+    [...code].every((c) => CODE_ALPHABET.includes(c))
     ? code
     : undefined;
 }
@@ -55,23 +60,23 @@ const importPublicRaw = async (jwk: JsonWebKey) => {
     "jwk",
     { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
     { name: "ECDSA", namedCurve: "P-256" },
-    false,
+    true,
     [],
   );
   return toBase64Url(new Uint8Array(await subtle.exportKey("raw", key)));
 };
 
 export async function identity(stored?: JsonWebKey): Promise<Identity> {
-  const jwk = (stored ?? await subtle.exportKey(
-    "jwk",
-    (
-      await subtle.generateKey(
-        { name: "ECDSA", namedCurve: "P-256" },
-        true,
-        ["sign", "verify"],
-      )
-    ).privateKey,
-  )) as JsonWebKey;
+  const jwk = (stored ??
+    (await subtle.exportKey(
+      "jwk",
+      (
+        await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+          "sign",
+          "verify",
+        ])
+      ).privateKey,
+    ))) as JsonWebKey;
   const privateKey = await subtle.importKey(
     "jwk",
     jwk,

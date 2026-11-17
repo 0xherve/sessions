@@ -21,7 +21,9 @@ body {
   padding: 20px;
   background: var(--bg);
   color: var(--text);
-  font: 14px / 1.5 system-ui, sans-serif;
+  font:
+    14px / 1.5 system-ui,
+    sans-serif;
 }
 
 header {
@@ -91,7 +93,9 @@ input {
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font: 14px ui-monospace, monospace;
+  font:
+    14px ui-monospace,
+    monospace;
 }
 
 button {
@@ -128,22 +132,6 @@ button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.sas {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  font: 600 24px ui-monospace, monospace;
-  letter-spacing: 0.2em;
-  text-align: center;
 }
 
 .shared {

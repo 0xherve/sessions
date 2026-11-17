@@ -13,7 +13,6 @@ export type Session = {
 };
 
 export type Profile = {
-  id: string;
   browser: string;
   binary?: string;
   profileDir?: string;
@@ -28,14 +27,14 @@ export type CdpSendParams = {
   params?: Record<string, unknown>;
 };
 
+export type HelloParams = { publicKey: string };
+export type HelloResult = { challenge: string };
+
 export type PairParams = {
   profile: Profile;
   publicKey: string;
   code: string;
 };
-
-export type HelloParams = { profileId: string };
-export type HelloResult = { challenge: string };
 
 export type AuthParams = { signature: string };
 

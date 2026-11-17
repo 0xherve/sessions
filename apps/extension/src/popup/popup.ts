@@ -1,6 +1,6 @@
 import type { Action, State } from "../shared/messages";
 
-const views = ["unpaired", "confirm", "ready"] as const;
+const views = ["unpaired", "ready"] as const;
 type View = (typeof views)[number];
 
 function show(view: View) {
@@ -12,22 +12,43 @@ function show(view: View) {
 
 const status = document.getElementById("status") as HTMLElement;
 const error = document.getElementById("error") as HTMLElement;
-const label = { unpaired: "Not paired", connecting: "Connecting", online: "Connected" };
+const pairButton = document.getElementById("pair") as HTMLButtonElement;
+const label = {
+  unpaired: "Not paired",
+  connecting: "Connecting",
+  paired: "Paired",
+  online: "Connected",
+};
 
 function render(state: State) {
   status.dataset.state = state.connection;
   status.textContent = label[state.connection];
-  show(state.connection === "online" ? "ready" : "unpaired");
+  show(
+    state.connection === "unpaired" || state.connection === "connecting"
+      ? "unpaired"
+      : "ready",
+  );
   error.hidden = !state.error;
   error.textContent = state.error ?? "";
 }
 
-chrome.runtime.sendMessage({ type: "state" }).then(render);
+async function send(message: Action | { type: "state" }) {
+  try {
+    render((await chrome.runtime.sendMessage(message)) as State);
+  } catch (cause) {
+    render({
+      connection: "unpaired",
+      error: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
+}
+
+void send({ type: "state" });
 chrome.runtime.onMessage.addListener((state: State) => render(state));
 
-document.getElementById("pair")!.addEventListener("click", () => {
+pairButton.addEventListener("click", async () => {
   const code = (document.getElementById("code") as HTMLInputElement).value;
-  void chrome.runtime.sendMessage({ type: "pair", code } as Action);
+  pairButton.disabled = true;
+  await send({ type: "pair", code });
+  pairButton.disabled = false;
 });
-
-document.getElementById("manage")!.addEventListener("click", () => chrome.runtime.openOptionsPage());

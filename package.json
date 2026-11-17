@@ -1,5 +1,6 @@
 {
   "name": "sessions-monorepo",
+  "description": "Give agents controlled access to your browser",
   "private": true,
   "type": "module",
   "workspaces": [

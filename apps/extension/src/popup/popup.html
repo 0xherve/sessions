@@ -9,26 +9,17 @@
   <body>
     <header>
       <h1>Sessions</h1>
-      <span id="status" class="status" data-state="offline">Offline</span>
+      <span id="status" class="status" data-state="unpaired">Not paired</span>
     </header>
 
     <p id="error" class="banner" role="alert" hidden></p>
 
     <main>
-      <section id="view-unpaired" hidden>
+      <section id="view-unpaired">
         <p class="hint">Run <code>sessions pair</code> in your terminal, then paste the code here.</p>
         <label for="code">Pairing code</label>
         <input id="code" type="text" autocomplete="off" spellcheck="false" />
         <button id="pair" type="button">Pair</button>
-      </section>
-
-      <section id="view-confirm" hidden>
-        <p class="hint">Check this matches your terminal.</p>
-        <output id="sas" class="sas"></output>
-        <div class="row">
-          <button id="reject" type="button" class="secondary">Doesn't match</button>
-          <button id="confirm" type="button">Matches</button>
-        </div>
       </section>
 
       <section id="view-ready" hidden>

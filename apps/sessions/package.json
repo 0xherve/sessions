@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@sessions/protocol": "workspace:*",
-    "commander": "^15.1.0"
+    "commander": "^15.1.0",
+    "nanoid": "^6.0.2"
   },
   "bin": {
     "sessions": "dist/sessions"
