@@ -15,7 +15,7 @@ export type ConnectionEvents = {
   unpaired(): void;
   connecting(): void;
   paired(): void;
-  online(): void;
+  online(peer: Peer): void;
 };
 
 const browserBrand = () =>
@@ -51,9 +51,11 @@ export function startConnection(
   let trying = false;
 
   const authenticate = async (session: Peer) => {
-    const [identity, profileId] = await Promise.all([getIdentity(), getProfileId()]);
-    if (!profileId)
-      throw new RpcError(ErrorCode.Application, "not paired");
+    const [identity, profileId] = await Promise.all([
+      getIdentity(),
+      getProfileId(),
+    ]);
+    if (!profileId) throw new RpcError(ErrorCode.Application, "not paired");
     const { challenge } = (await session.request(
       "hello",
       { profileId },
@@ -85,7 +87,7 @@ export function startConnection(
         peer = undefined;
         events.paired();
       };
-      events.online();
+      events.online(opened.peer);
     } finally {
       trying = false;
     }

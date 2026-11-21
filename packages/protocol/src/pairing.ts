@@ -1,4 +1,14 @@
-import { CODE_ALPHABET, CODE_LENGTH } from "./constants";
+import { customAlphabet } from "nanoid";
+import {
+  CODE_ALPHABET,
+  CODE_LENGTH,
+  ID_ALPHABET,
+  ID_LENGTH,
+} from "./constants";
+
+const idChars = customAlphabet(ID_ALPHABET, ID_LENGTH);
+
+export const generateId = idChars;
 
 const subtle = globalThis.crypto.subtle;
 const text = new TextEncoder();

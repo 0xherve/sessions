@@ -15,6 +15,7 @@
       "name": "@sessions/extension",
       "dependencies": {
         "@sessions/protocol": "workspace:*",
+        "nanoid": "^6.0.2",
       },
     },
     "apps/sessions": {
@@ -30,6 +31,9 @@
     },
     "packages/protocol": {
       "name": "@sessions/protocol",
+      "dependencies": {
+        "nanoid": "^6.0.2",
+      },
     },
   },
   "packages": {

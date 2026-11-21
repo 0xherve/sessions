@@ -1,4 +1,7 @@
-export type Action = { type: "pair"; code: string };
+export type Action =
+  | { type: "pair"; code: string }
+  | { type: "share-tab" }
+  | { type: "share-group" };
 
 export type Phase = "unpaired" | "connecting" | "paired" | "online";
 

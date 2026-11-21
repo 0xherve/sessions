@@ -13,7 +13,11 @@ export type PeerHandlers = {
 };
 
 export type Peer = {
-  request(method: string, params?: unknown, timeoutMs?: number): Promise<unknown>;
+  request(
+    method: string,
+    params?: unknown,
+    timeoutMs?: number,
+  ): Promise<unknown>;
   notify(method: string, params?: unknown): void;
   receive(data: string): Promise<void>;
   close(reason: Error): void;
@@ -87,9 +91,7 @@ export const createPeer = (
             ? undefined
             : setTimeout(() => {
                 pending.delete(id);
-                reject(
-                  new Error(`${method} timed out after ${timeoutMs} ms`),
-                );
+                reject(new Error(`${method} timed out after ${timeoutMs} ms`));
               }, timeoutMs);
         pending.set(id, { resolve, reject, timer });
         send(JSON.stringify({ jsonrpc: "2.0", id, method, params }));

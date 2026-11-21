@@ -6,6 +6,7 @@
     "build": "bun run build.ts"
   },
   "dependencies": {
-    "@sessions/protocol": "workspace:*"
+    "@sessions/protocol": "workspace:*",
+    "nanoid": "^6.0.2"
   }
 }
