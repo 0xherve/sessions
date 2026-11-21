@@ -1,18 +1,57 @@
-import type { Peer } from "@sessions/protocol";
+import type { Peer, SessionRecord } from "@sessions/protocol";
 import { POLL_PERIOD_MINUTES } from "@sessions/protocol";
 import type { Action, State } from "../shared/messages";
 import { startConnection } from "./connection";
-import { shared, shareTab, startGroup, startSessions } from "./sessions";
-import { getIdentity } from "./storage";
+import { detachSession, startDriver } from "./driver";
+import {
+  sessionForTab,
+  shared,
+  shareTab,
+  startGroup,
+  startSessions,
+  unshare,
+} from "./sessions";
+import { getIdentity, getProfileId } from "./storage";
 
-let state: State = { connection: "unpaired", error: null };
+type Status = Omit<State, "sharing">;
+
+let state: Status = { connection: "unpaired", error: null };
 let peer: Peer | undefined;
 
-const push = () => chrome.runtime.sendMessage(state).catch(() => {});
+const restored = getProfileId()
+  .then((profileId) => {
+    if (profileId && state.connection === "unpaired")
+      state = { connection: "paired", error: null };
+  })
+  .catch(() => {});
 
-const setState = (next: State) => {
+const current = async (): Promise<State> => {
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  const records = await shared();
+  const groupId = tab?.groupId && tab.groupId > 0 ? tab.groupId : undefined;
+  return {
+    ...state,
+    sharing: {
+      tab: tab?.id !== undefined && records.some((r) => r.tabId === tab.id),
+      group:
+        groupId !== undefined && records.some((r) => r.groupId === groupId),
+    },
+  };
+};
+
+const respond = (reply: (state: State) => void) =>
+  void current()
+    .catch((): State => ({ ...state, sharing: { tab: false, group: false } }))
+    .then(reply);
+
+const setState = (next: Status) => {
   state = next;
-  push();
+  void current()
+    .then((full) => chrome.runtime.sendMessage(full).catch(() => {}))
+    .catch(() => {});
 };
 
 const announce = async () => {
@@ -43,6 +82,23 @@ startSessions({
     peer?.notify("session.ended", { sessionId: session.id });
   },
 });
+startDriver((tabId) => {
+  void sessionForTab(tabId)
+    .then((session) => {
+      if (session) return endSession(session);
+    })
+    .catch(() => {});
+});
+
+async function endSession(session: SessionRecord) {
+  try {
+    await unshare(session.id);
+    peer?.notify("session.ended", { sessionId: session.id });
+    await detachSession(session);
+  } finally {
+    setState(state);
+  }
+}
 
 function pairWith(code: string, reply: (state: State) => void) {
   setState({ connection: "connecting", error: null });
@@ -54,15 +110,10 @@ function pairWith(code: string, reply: (state: State) => void) {
         error: error instanceof Error ? error.message : String(error),
       }),
     )
-    .finally(() => reply(state));
+    .finally(() => respond(reply));
 }
 
 async function act(action: Action): Promise<void> {
-  if (action.type === "pair") {
-    setState({ connection: "connecting", error: null });
-    await connection.pair(action.code);
-    return;
-  }
   if (action.type === "share-tab") {
     const session = await shareTab();
     peer?.notify("session.created", { session });
@@ -71,6 +122,15 @@ async function act(action: Action): Promise<void> {
   if (action.type === "share-group") {
     const session = await startGroup();
     peer?.notify("session.created", { session });
+    return;
+  }
+  if (action.type === "stop") {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      lastFocusedWindow: true,
+    });
+    const session = tab?.id ? await sessionForTab(tab.id) : undefined;
+    if (session) await endSession(session);
   }
 }
 
@@ -82,15 +142,18 @@ function handle(action: Action, reply: (state: State) => void) {
         error: error instanceof Error ? error.message : String(error),
       }),
     )
-    .finally(() => reply(state));
+    .finally(() => respond(reply));
 }
 
 chrome.runtime.onMessage.addListener(
   (message: Action | { type: "state" }, sender, reply) => {
     if (!sender.url?.startsWith(chrome.runtime.getURL(""))) return false;
     if (message.type === "state") {
-      void connection.wake();
-      return reply(state);
+      void restored.then(() => {
+        respond(reply);
+        void connection.wake();
+      });
+      return true;
     }
     if (message.type === "pair") pairWith(message.code, reply);
     else handle(message, reply);
@@ -102,4 +165,4 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "connect") void connection.wake();
 });
 void chrome.alarms.create("connect", { periodInMinutes: POLL_PERIOD_MINUTES });
-void connection.wake();
+void restored.then(() => connection.wake());

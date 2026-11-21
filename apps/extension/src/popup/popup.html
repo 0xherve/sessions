@@ -16,16 +16,18 @@
 
     <main>
       <section id="view-unpaired">
-        <p class="hint">Run <code>sessions pair</code> in your terminal, then paste the code here.</p>
+        <p id="unpaired-hint" class="hint">Run <code>sessions pair</code> in your terminal, then paste the code here.</p>
         <label for="code">Pairing code</label>
         <input id="code" type="text" autocomplete="off" spellcheck="false" />
         <button id="pair" type="button">Pair</button>
       </section>
 
       <section id="view-ready" hidden>
-        <p class="hint">Agents can only see what you share.</p>
+        <p id="ready-note" class="hint">Agents can only see what you share.</p>
         <button id="share-tab" type="button">Share this tab</button>
         <button id="share-group" type="button" class="secondary">Share this tab group</button>
+        <p id="sharing" class="hint" hidden></p>
+        <button id="stop" type="button" class="secondary" hidden>Stop sharing</button>
       </section>
     </main>
 

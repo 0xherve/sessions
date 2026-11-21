@@ -37,6 +37,11 @@ export type AgentHelloParams = { name: string };
 
 export type SessionUseParams = { sessionId: string };
 
+export type SessionCommandParams = {
+  sessionId: string;
+  command: { method: string; params?: Record<string, unknown> };
+};
+
 export type Tab = {
   id: number;
   url: string;

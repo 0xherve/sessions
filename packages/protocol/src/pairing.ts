@@ -32,10 +32,8 @@ const fromBase64Url = (value: string): Uint8Array<ArrayBuffer> => {
 const randomBytes = (length: number) =>
   globalThis.crypto.getRandomValues(new Uint8Array(new ArrayBuffer(length)));
 
-/** Random challenge: 16 bytes, url-safe text. */
 export const nonce = () => toBase64Url(randomBytes(16));
 
-/** 8 characters the user can read over a shoulder and type without mistakes. */
 export function generateCode(): string {
   return Array.from(
     randomBytes(CODE_LENGTH),
@@ -43,7 +41,6 @@ export function generateCode(): string {
   ).join("");
 }
 
-/** Canonical form of a typed code: dashes and spaces dropped, I/L read as 1 and O as 0. */
 export function normalizeCode(input: string): string | undefined {
   const code = input
     .toUpperCase()

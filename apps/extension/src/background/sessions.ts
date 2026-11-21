@@ -1,12 +1,4 @@
-import { Pairing } from "@sessions/protocol";
-
-export type SessionRecord = {
-  id: string;
-  kind: "tab" | "group";
-  title: string;
-  tabId?: number;
-  groupId?: number;
-};
+import { Pairing, type SessionRecord } from "@sessions/protocol";
 
 const storage = chrome.storage.session;
 
@@ -29,6 +21,7 @@ export const shareTab = async (): Promise<SessionRecord> => {
     lastFocusedWindow: true,
   });
   if (!tab?.id) throw new Error("This tab can't be shared.");
+  if (await sessionForTab(tab.id)) throw new Error("Already shared");
   const record: SessionRecord = {
     id: Pairing.generateId(),
     kind: "tab",
@@ -46,7 +39,10 @@ export const startGroup = async (): Promise<SessionRecord> => {
   });
   if (!tab?.groupId || tab.groupId < 0)
     throw new Error("This tab isn't in a group. Group it first, then share.");
-  const group = await chrome.tabGroups.get(tab.groupId);
+  const groupId = tab.groupId;
+  if ((await read()).some((r) => r.groupId === groupId))
+    throw new Error("Already shared");
+  const group = await chrome.tabGroups.get(groupId);
   const record: SessionRecord = {
     id: Pairing.generateId(),
     kind: "group",
@@ -55,6 +51,23 @@ export const startGroup = async (): Promise<SessionRecord> => {
   };
   await write([...(await read()), record]);
   return record;
+};
+
+export const unshare = async (id: string) => {
+  await write((await read()).filter((r) => r.id !== id));
+};
+
+export const sessionForTab = async (tabId: number) => {
+  let groupId: number | undefined;
+  try {
+    groupId = (await chrome.tabs.get(tabId)).groupId;
+  } catch {
+    return undefined;
+  }
+  return (await shared()).find(
+    (r) =>
+      r.tabId === tabId || (groupId !== undefined && r.groupId === groupId),
+  );
 };
 
 export function startSessions(notify: { ended(session: SessionRecord): void }) {

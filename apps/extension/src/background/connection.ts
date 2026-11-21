@@ -1,6 +1,7 @@
 import {
   createPeer,
   ErrorCode,
+  methodNotFound,
   PAIR_PORT,
   Pairing,
   type Peer,
@@ -8,7 +9,9 @@ import {
   RpcError,
   SERVICE_HOST,
   SERVICE_PORT,
+  type SessionCommandParams,
 } from "@sessions/protocol";
+import { runCommand } from "./driver";
 import { getProfileId, saveProfileId } from "./storage";
 
 export type ConnectionEvents = {
@@ -29,7 +32,13 @@ const browserBrand = () =>
 const openSocket = (port: number) =>
   new Promise<{ socket: WebSocket; peer: Peer }>((ok, fail) => {
     const socket = new WebSocket(`ws://${SERVICE_HOST}:${port}`);
-    const peer = createPeer((out) => socket.send(out));
+    const peer = createPeer((out) => socket.send(out), {
+      request: (method, params) => {
+        if (method === "session.command")
+          return runCommand(params as SessionCommandParams);
+        throw methodNotFound(method);
+      },
+    });
     socket.onmessage = (event) => void peer.receive(String(event.data));
     socket.onopen = () => ok({ socket, peer });
     socket.onerror = () =>

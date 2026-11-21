@@ -7,7 +7,8 @@ export const CODE_LENGTH = 8;
 export const CODE_TTL_MS = 10 * 60_000;
 export const CODE_MAX_STRIKES = 3;
 
-export const ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+export const ID_ALPHABET =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 export const ID_LENGTH = 12;
 
 export const REQUEST_TIMEOUT_MS = 5000;

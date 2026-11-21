@@ -43,24 +43,13 @@ h1 {
 }
 
 .status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
 }
 
-.status::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--muted);
-}
-
-.status[data-state="online"]::before {
-  background: var(--accent);
+.status[data-state="online"] {
+  color: var(--accent);
 }
 
 section {

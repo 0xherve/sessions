@@ -7,6 +7,7 @@ import {
   Pairing,
   type Peer,
   RpcError,
+  type SessionCommandParams,
   type SessionInfo,
   type SessionRecord,
   type SessionUseParams,
@@ -99,24 +100,51 @@ const agentHello = (connection: Connection, params: AgentHelloParams) => {
   };
 };
 
-const sessionUse = (connection: Connection, params: SessionUseParams) => {
+const lookup = (connection: Connection, sessionId: unknown) => {
   if (!connection.agent)
     throw new RpcError(
       ErrorCode.Application,
       "Identify with agent.hello first",
     );
-  if (typeof params.sessionId !== "string")
-    throw new RpcError(ErrorCode.InvalidParams, "Bad session.use");
-  const session = sessions.get(params.sessionId);
+  if (typeof sessionId !== "string")
+    throw new RpcError(ErrorCode.InvalidParams, "Bad sessionId");
+  const session = sessions.get(sessionId);
   if (!session) throw new RpcError(ErrorCode.Application, "No such session");
+  return session;
+};
+
+const sessionUse = (connection: Connection, params: SessionUseParams) => {
+  const session = lookup(connection, params.sessionId);
   if (session.agent && session.agent !== connection)
     throw new RpcError(
       ErrorCode.Application,
       "Session in use by another agent",
     );
   session.agent = connection;
-  (connection.claims ??= new Set()).add(params.sessionId);
+  connection.claims ??= new Set();
+  connection.claims.add(params.sessionId);
   return { session: toInfo(params.sessionId, session) };
+};
+
+const sessionCommand = async (
+  connection: Connection,
+  params: SessionCommandParams,
+) => {
+  const session = lookup(connection, params.sessionId);
+  if (session.agent !== connection)
+    throw new RpcError(
+      ErrorCode.Application,
+      "Claim the session with session.use first",
+    );
+  const browser = [...connections].find(
+    (c) => c.profileId === session.browserId && c.peer,
+  );
+  if (!browser?.peer)
+    throw new RpcError(ErrorCode.Application, "The browser is offline");
+  return await browser.peer.request("session.command", {
+    sessionId: params.sessionId,
+    command: params.command,
+  });
 };
 
 export const routes: Record<string, Route> = {
@@ -124,6 +152,7 @@ export const routes: Record<string, Route> = {
   auth,
   "agent.hello": agentHello,
   "session.use": sessionUse,
+  "session.command": sessionCommand,
 };
 
 export const handleNotification = (
