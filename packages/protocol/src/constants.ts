@@ -12,4 +12,5 @@ export const ID_ALPHABET =
 export const ID_LENGTH = 12;
 
 export const REQUEST_TIMEOUT_MS = 5000;
+export const COMMAND_TIMEOUT_MS = 15_000;
 export const POLL_PERIOD_MINUTES = 0.5;

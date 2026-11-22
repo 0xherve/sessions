@@ -10,6 +10,7 @@ import {
   type SessionCommandParams,
   type SessionInfo,
   type SessionRecord,
+  type SessionReleaseParams,
   type SessionUseParams,
 } from "@sessions/protocol";
 import { loadBrowsers } from "./state";
@@ -126,6 +127,21 @@ const sessionUse = (connection: Connection, params: SessionUseParams) => {
   return { session: toInfo(params.sessionId, session) };
 };
 
+const sessionRelease = (
+  connection: Connection,
+  params: SessionReleaseParams,
+) => {
+  const session = lookup(connection, params.sessionId);
+  if (session.agent !== connection)
+    throw new RpcError(
+      ErrorCode.Application,
+      "You have not claimed this session",
+    );
+  session.agent = undefined;
+  connection.claims?.delete(params.sessionId);
+  return { session: toInfo(params.sessionId, session) };
+};
+
 const sessionCommand = async (
   connection: Connection,
   params: SessionCommandParams,
@@ -152,6 +168,7 @@ export const routes: Record<string, Route> = {
   auth,
   "agent.hello": agentHello,
   "session.use": sessionUse,
+  "session.release": sessionRelease,
   "session.command": sessionCommand,
 };
 
