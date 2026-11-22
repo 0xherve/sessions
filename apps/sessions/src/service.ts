@@ -84,7 +84,7 @@ const auth = async (connection: Connection, params: AuthParams) => {
     paired &&
     (await Pairing.verify(paired.public_key, params.signature, challenge));
   if (!ok) throw new RpcError(ErrorCode.Application, "Bad signature");
-  console.log(`connected: ${paired.browser} (${profileId})`);
+  console.error(`connected: ${paired.browser} (${profileId})`);
   return null;
 };
 
@@ -92,7 +92,7 @@ const agentHello = (connection: Connection, params: AgentHelloParams) => {
   if (typeof params.name !== "string" || !params.name.trim())
     throw new RpcError(ErrorCode.InvalidParams, "Bad agent hello");
   connection.agent = params.name.trim();
-  console.log(`agent: ${connection.agent}`);
+  console.error(`agent: ${connection.agent}`);
   return {
     sessions: [...sessions.entries()].map(([id, session]) =>
       toInfo(id, session),

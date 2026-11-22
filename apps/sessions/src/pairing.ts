@@ -26,10 +26,14 @@ export async function servePairing(code: string) {
   const server = Bun.serve<{ peer?: Peer }>({
     port: PAIR_PORT,
     hostname: SERVICE_HOST,
-    fetch: (request, server) =>
-      server.upgrade(request, { data: {} })
+    fetch: (request, server) => {
+      const origin = request.headers.get("origin");
+      if (origin !== null && !origin.startsWith("chrome-extension://"))
+        return new Response("Forbidden", { status: 403 });
+      return server.upgrade(request, { data: {} })
         ? undefined
-        : new Response("Sessions pairing", { status: 404 }),
+        : new Response("Sessions pairing", { status: 404 });
+    },
     websocket: {
       message(ws, data) {
         ws.data.peer ??= createPeer((out) => ws.send(out), {

@@ -7,9 +7,11 @@
     "build": "bun build src/cli/main.ts --compile --outfile dist/sessions"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@sessions/protocol": "workspace:*",
     "commander": "^15.1.0",
-    "nanoid": "^6.0.2"
+    "nanoid": "^6.0.2",
+    "zod": "^4.6.7"
   },
   "bin": {
     "sessions": "dist/sessions"

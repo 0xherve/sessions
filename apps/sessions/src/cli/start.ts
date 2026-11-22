@@ -16,12 +16,16 @@ export async function start() {
   Bun.serve<Connection & { peer?: Peer }>({
     port: SERVICE_PORT,
     hostname: SERVICE_HOST,
-    fetch: (request, server) =>
-      server.upgrade(request, { data: {} })
+    fetch: (request, server) => {
+      const origin = request.headers.get("origin");
+      if (origin !== null && !origin.startsWith("chrome-extension://"))
+        return new Response("Forbidden", { status: 403 });
+      return server.upgrade(request, { data: {} })
         ? undefined
         : new Response("Sessions service — for browsers and agents", {
             status: 404,
-          }),
+          });
+    },
     websocket: {
       open(ws) {
         register(ws.data);
@@ -39,6 +43,7 @@ export async function start() {
       },
     },
   });
-
-  console.log(`Sessions service listening on ${SERVICE_HOST}:${SERVICE_PORT}`);
+  console.error(
+    `Sessions service listening on ${SERVICE_HOST}:${SERVICE_PORT}`,
+  );
 }
