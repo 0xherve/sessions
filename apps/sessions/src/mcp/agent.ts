@@ -6,11 +6,20 @@ import {
 } from "@sessions/protocol";
 
 let connection: { socket: WebSocket; peer: Peer } | undefined;
+let notification: ((method: string, params: unknown) => void) | undefined;
+
+export const onNotification = (
+  handler: (method: string, params: unknown) => void,
+) => {
+  notification = handler;
+};
 
 async function connect(): Promise<{ socket: WebSocket; peer: Peer }> {
-  if (connection) return connection;
+  if (connection?.socket.readyState === WebSocket.OPEN) return connection;
   const socket = new WebSocket(`ws://${SERVICE_HOST}:${SERVICE_PORT}`);
-  const peer = createPeer((out) => socket.send(out));
+  const peer = createPeer((out) => socket.send(out), {
+    notification: (method, params) => notification?.(method, params),
+  });
   socket.onmessage = (event) => void peer.receive(String(event.data));
   await new Promise<void>((ok, fail) => {
     socket.onopen = () => ok();
@@ -21,14 +30,13 @@ async function connect(): Promise<{ socket: WebSocket; peer: Peer }> {
   return connection;
 }
 
-export async function withAgent(
-  run: (peer: Peer) => Promise<unknown>,
-) {
+export async function withAgent(run: (peer: Peer) => Promise<unknown>) {
   const { peer } = await connect();
   try {
     return await run(peer);
   } catch (cause) {
-    connection = undefined;
+    if (connection?.socket.readyState !== WebSocket.OPEN)
+      connection = undefined;
     throw cause;
   }
 }
