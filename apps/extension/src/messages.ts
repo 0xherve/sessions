@@ -2,7 +2,8 @@ export type Action =
   | { type: "pair"; code: string }
   | { type: "share-tab" }
   | { type: "share-group" }
-  | { type: "stop" };
+  | { type: "stop" }
+  | { type: "stop-service" };
 
 export type Phase = "unpaired" | "connecting" | "paired" | "online";
 

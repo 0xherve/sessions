@@ -1,5 +1,5 @@
 import type { Peer, SessionRecord } from "@sessions/shared";
-import { POLL_PERIOD_MINUTES } from "@sessions/shared";
+import { POLL_PERIOD_MINUTES, REQUEST_TIMEOUT_MS } from "@sessions/shared";
 import type { Action, State } from "../messages";
 import { startConnection } from "./connection";
 import { detachSession, startDriver } from "./driver";
@@ -11,7 +11,7 @@ import {
   startSessions,
   unshare,
 } from "./sessions";
-import { getProfileId } from "./storage";
+import { getIdentity, getProfileId } from "./storage";
 
 type Status = Omit<State, "sharing">;
 
@@ -68,6 +68,9 @@ const events = {
   paired: () => {
     peer = undefined;
     setState({ connection: "paired", error: null });
+    void shared()
+      .then((records) => Promise.all(records.map(endSession)))
+      .catch(() => {});
   },
   online: (connected: Peer) => {
     peer = connected;
@@ -76,7 +79,7 @@ const events = {
   },
 };
 
-const connection = startConnection(events);
+const connection = startConnection(events, getIdentity);
 startSessions({
   ended: (session) => {
     peer?.notify("session.ended", { sessionId: session.id });
@@ -122,6 +125,10 @@ async function act(action: Action): Promise<void> {
   if (action.type === "share-group") {
     const session = await startGroup();
     peer?.notify("session.created", { session });
+    return;
+  }
+  if (action.type === "stop-service") {
+    await peer?.request("service.stop", {}, REQUEST_TIMEOUT_MS);
     return;
   }
   if (action.type === "stop") {

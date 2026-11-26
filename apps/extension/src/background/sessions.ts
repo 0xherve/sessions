@@ -37,17 +37,15 @@ export const startGroup = async (): Promise<SessionRecord> => {
     active: true,
     lastFocusedWindow: true,
   });
-  if (!tab?.groupId || tab.groupId < 0)
-    throw new Error("This tab isn't in a group. Group it first, then share.");
-  const groupId = tab.groupId;
-  if ((await read()).some((r) => r.groupId === groupId))
-    throw new Error("Already shared");
-  const group = await chrome.tabGroups.get(groupId);
+  if (!tab?.id) throw new Error("This tab can't be shared.");
+  if (await sessionForTab(tab.id)) throw new Error("Already shared");
+  const groupId = await chrome.tabs.group({ tabIds: tab.id });
+  await chrome.tabGroups.update(groupId, { title: "Sessions" });
   const record: SessionRecord = {
     id: generateId(),
     kind: "group",
-    title: group.title || "group",
-    groupId: tab.groupId,
+    title: "Sessions",
+    groupId,
   };
   await write([...(await read()), record]);
   return record;

@@ -23,18 +23,21 @@ const shareGroupButton = document.getElementById(
 ) as HTMLButtonElement;
 const sharingText = document.getElementById("sharing") as HTMLElement;
 const stopButton = document.getElementById("stop") as HTMLButtonElement;
+const stopServiceButton = document.getElementById(
+  "stop-service",
+) as HTMLButtonElement;
 const actionButtons = [shareTabButton, shareGroupButton, stopButton];
 const label = {
   unpaired: "Not paired",
   connecting: "Pairing",
-  paired: "Offline",
+  paired: "Stopped",
   online: "Connected",
 };
 const hint = {
   unpaired:
     "Run <code>sessions pair</code> in your terminal, then paste the code here.",
   connecting: "Checking the code with the service.",
-  paired: "Shares go live when it's back.",
+  paired: "Run <code>sessions start</code> to share tabs.",
   online: "Agents can only see what you share.",
 };
 
@@ -48,6 +51,9 @@ function render(state: State) {
   sharingText.textContent = state.sharing.group
     ? "Sharing this tab group"
     : "Sharing this tab";
+  stopServiceButton.hidden = state.connection !== "online";
+  stopServiceButton.disabled = false;
+  status.hidden = state.connection === "online";
   status.dataset.state = state.connection;
   status.textContent = label[state.connection];
   unpairedHint.innerHTML = hint[state.connection];
@@ -95,3 +101,7 @@ shareGroupButton.addEventListener(
 );
 
 stopButton.addEventListener("click", () => void act({ type: "stop" }));
+stopServiceButton.addEventListener("click", () => {
+  stopServiceButton.disabled = true;
+  void send({ type: "stop-service" });
+});

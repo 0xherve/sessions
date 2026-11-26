@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { runMcp } from "../mcp/server";
+import { runMcp } from "../mcp";
 import { list } from "./list";
 import { pair } from "./pair";
 import { start } from "./start";

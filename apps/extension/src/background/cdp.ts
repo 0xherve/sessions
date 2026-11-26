@@ -1,3 +1,5 @@
+import { clearLogs } from "./logs";
+
 export const attached = new Set<number>();
 export const refs = new Map<number, Map<string, number>>();
 
@@ -51,7 +53,9 @@ export const attach = (tabId: number) => {
           "Another debugger is attached to this tab (close DevTools)",
         );
     })
-    .then(() => {
+    .then(async () => {
+      await send(tabId, "Runtime.enable");
+      await send(tabId, "Network.enable");
       attached.add(tabId);
     });
 };
@@ -60,6 +64,7 @@ export const detach = (tabId: number) =>
   new Promise<void>((resolve, reject) => {
     refs.delete(tabId);
     attached.delete(tabId);
+    clearLogs(tabId);
     chrome.debugger.detach({ tabId }, () => {
       const error = chrome.runtime.lastError;
       if (error) reject(new Error(error.message));

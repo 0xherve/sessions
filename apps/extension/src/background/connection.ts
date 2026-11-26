@@ -2,6 +2,7 @@ import {
   createPeer,
   ErrorCode,
   type HelloResult,
+  type Identity,
   methodNotFound,
   nonce,
   normalizeCode,
@@ -63,26 +64,35 @@ const openSocket = (port: number) =>
       );
   });
 
-export function startConnection(events: ConnectionEvents) {
+export function startConnection(
+  events: ConnectionEvents,
+  getIdentity: () => Promise<Identity>,
+) {
   let socket: WebSocket | undefined;
   let peer: Peer | undefined;
   let trying = false;
 
   const authenticate = async (session: Peer) => {
-    const [profileId, serviceKey] = await Promise.all([
+    const [identity, profileId, serviceKey] = await Promise.all([
+      getIdentity(),
       getProfileId(),
       getServiceKey(),
     ]);
     if (!profileId || !serviceKey)
       throw new RpcError(ErrorCode.Application, "not paired");
     const proof = nonce();
-    const { signature } = (await session.request(
+    const { signature, challenge } = (await session.request(
       "hello",
-      { profileId, nonce: proof },
+      { nonce: proof },
       REQUEST_TIMEOUT_MS,
     )) as HelloResult;
     if (!(await verify(serviceKey, signature, proof)))
       throw new Error("the service couldn't prove who it is");
+    await session.request(
+      "auth",
+      { profileId, signature: await identity.sign(challenge) },
+      REQUEST_TIMEOUT_MS,
+    );
   };
 
   const tryService = async () => {
@@ -127,12 +137,14 @@ export function startConnection(events: ConnectionEvents) {
         "A pairing code has 8 letters and digits, like ABCD-1234.",
       );
     events.connecting();
+    const identity = await getIdentity();
     const opened = await openSocket(PAIR_PORT);
     try {
       const paired = (await opened.peer.request(
         "pair",
         {
           profile: { browser: browserBrand() },
+          publicKey: identity.publicKey,
           code,
         },
         REQUEST_TIMEOUT_MS,

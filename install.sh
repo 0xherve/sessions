@@ -26,7 +26,10 @@ case ":$PATH:" in
     case "$(basename "${SHELL:-sh}")" in
       zsh) rc=~/.zshrc ;;
       bash) rc=~/.bashrc ;;
-      *) rc=~/.profile ;;
+      *)
+        echo "add ~/.local/bin to your PATH to use sessions"
+        exit 0
+        ;;
     esac
     printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$rc"
     echo "added ~/.local/bin to $rc"
