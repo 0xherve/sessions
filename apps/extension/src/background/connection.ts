@@ -1,19 +1,27 @@
 import {
   createPeer,
   ErrorCode,
-  type Identity,
+  type HelloResult,
   methodNotFound,
+  nonce,
   normalizeCode,
   PAIR_PORT,
+  type PairResult,
   type Peer,
   REQUEST_TIMEOUT_MS,
   RpcError,
   SERVICE_HOST,
   SERVICE_PORT,
   type SessionCommandParams,
+  verify,
 } from "@sessions/shared";
 import { runCommand } from "./driver";
-import { getProfileId, saveProfileId } from "./storage";
+import {
+  getProfileId,
+  getServiceKey,
+  saveProfileId,
+  saveServiceKey,
+} from "./storage";
 
 export type ConnectionEvents = {
   unpaired(): void;
@@ -30,18 +38,21 @@ const browserBrand = () =>
     .find((b) => !/Chromium|Not.?A.?Brand/i.test(b))
     ?.replace(/^Google /, "") ?? "Chromium";
 
+type Opened = { socket: WebSocket; peer: Peer; trust: () => void };
+
 const openSocket = (port: number) =>
-  new Promise<{ socket: WebSocket; peer: Peer }>((ok, fail) => {
+  new Promise<Opened>((ok, fail) => {
+    let trusted = false;
     const socket = new WebSocket(`ws://${SERVICE_HOST}:${port}`);
     const peer = createPeer((out) => socket.send(out), {
       request: (method, params) => {
-        if (method === "session.command")
+        if (method === "session.command" && trusted)
           return runCommand(params as SessionCommandParams);
         throw methodNotFound(method);
       },
     });
     socket.onmessage = (event) => void peer.receive(String(event.data));
-    socket.onopen = () => ok({ socket, peer });
+    socket.onopen = () => ok({ socket, peer, trust: () => (trusted = true) });
     socket.onerror = () =>
       fail(
         new Error(
@@ -52,30 +63,26 @@ const openSocket = (port: number) =>
       );
   });
 
-export function startConnection(
-  events: ConnectionEvents,
-  getIdentity: () => Promise<Identity>,
-) {
+export function startConnection(events: ConnectionEvents) {
   let socket: WebSocket | undefined;
   let peer: Peer | undefined;
   let trying = false;
 
   const authenticate = async (session: Peer) => {
-    const [identity, profileId] = await Promise.all([
-      getIdentity(),
+    const [profileId, serviceKey] = await Promise.all([
       getProfileId(),
+      getServiceKey(),
     ]);
-    if (!profileId) throw new RpcError(ErrorCode.Application, "not paired");
-    const { challenge } = (await session.request(
+    if (!profileId || !serviceKey)
+      throw new RpcError(ErrorCode.Application, "not paired");
+    const proof = nonce();
+    const { signature } = (await session.request(
       "hello",
-      { profileId },
+      { profileId, nonce: proof },
       REQUEST_TIMEOUT_MS,
-    )) as { challenge: string };
-    await session.request(
-      "auth",
-      { signature: await identity.sign(challenge) },
-      REQUEST_TIMEOUT_MS,
-    );
+    )) as HelloResult;
+    if (!(await verify(serviceKey, signature, proof)))
+      throw new Error("the service couldn't prove who it is");
   };
 
   const tryService = async () => {
@@ -85,6 +92,7 @@ export function startConnection(
       const opened = await openSocket(SERVICE_PORT);
       try {
         await authenticate(opened.peer);
+        opened.trust();
       } catch (error) {
         opened.socket.close();
         throw error;
@@ -119,18 +127,17 @@ export function startConnection(
         "A pairing code has 8 letters and digits, like ABCD-1234.",
       );
     events.connecting();
-    const identity = await getIdentity();
     const opened = await openSocket(PAIR_PORT);
     try {
       const paired = (await opened.peer.request(
         "pair",
         {
           profile: { browser: browserBrand() },
-          publicKey: identity.publicKey,
           code,
         },
         REQUEST_TIMEOUT_MS,
-      )) as { id: string };
+      )) as PairResult;
+      await saveServiceKey(paired.publicKey);
       await saveProfileId(paired.id);
     } finally {
       opened.socket.close();

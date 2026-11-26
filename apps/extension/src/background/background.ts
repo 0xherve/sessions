@@ -11,7 +11,7 @@ import {
   startSessions,
   unshare,
 } from "./sessions";
-import { getIdentity, getProfileId } from "./storage";
+import { getProfileId } from "./storage";
 
 type Status = Omit<State, "sharing">;
 
@@ -76,7 +76,7 @@ const events = {
   },
 };
 
-const connection = startConnection(events, getIdentity);
+const connection = startConnection(events);
 startSessions({
   ended: (session) => {
     peer?.notify("session.ended", { sessionId: session.id });

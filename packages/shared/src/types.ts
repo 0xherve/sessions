@@ -24,14 +24,13 @@ export type SessionInfo = {
 
 export type PairParams = {
   profile: Profile;
-  publicKey: string;
   code: string;
 };
 
-export type HelloParams = { profileId: string };
-export type HelloResult = { challenge: string };
+export type PairResult = { id: string; publicKey: string };
 
-export type AuthParams = { signature: string };
+export type HelloParams = { profileId: string; nonce: string };
+export type HelloResult = { signature: string };
 
 export type BrowserUnpairParams = { profileId: string };
 
