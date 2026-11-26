@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Pairing, type Profile } from "@sessions/shared";
+import { generateId, type Profile } from "@sessions/shared";
 
 const stateFile = join(homedir(), ".sessions", "profiles.json");
 
@@ -28,7 +28,7 @@ export async function addBrowser(
   profile: Profile,
 ): Promise<string> {
   const browsers = await loadBrowsers();
-  const id = Pairing.generateId();
+  const id = generateId();
   browsers[id] = { ...profile, public_key: publicKey, paired_at: Date.now() };
   await saveBrowsers(browsers);
   return id;

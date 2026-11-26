@@ -1,4 +1,4 @@
-import { Pairing, type SessionRecord } from "@sessions/shared";
+import { generateId, type SessionRecord } from "@sessions/shared";
 
 const storage = chrome.storage.session;
 
@@ -23,7 +23,7 @@ export const shareTab = async (): Promise<SessionRecord> => {
   if (!tab?.id) throw new Error("This tab can't be shared.");
   if (await sessionForTab(tab.id)) throw new Error("Already shared");
   const record: SessionRecord = {
-    id: Pairing.generateId(),
+    id: generateId(),
     kind: "tab",
     title: tab.title ?? "untitled",
     tabId: tab.id,
@@ -44,7 +44,7 @@ export const startGroup = async (): Promise<SessionRecord> => {
     throw new Error("Already shared");
   const group = await chrome.tabGroups.get(groupId);
   const record: SessionRecord = {
-    id: Pairing.generateId(),
+    id: generateId(),
     kind: "group",
     title: group.title || "group",
     groupId: tab.groupId,

@@ -1,9 +1,10 @@
 import {
   createPeer,
   ErrorCode,
+  type Identity,
   methodNotFound,
+  normalizeCode,
   PAIR_PORT,
-  Pairing,
   type Peer,
   REQUEST_TIMEOUT_MS,
   RpcError,
@@ -53,7 +54,7 @@ const openSocket = (port: number) =>
 
 export function startConnection(
   events: ConnectionEvents,
-  getIdentity: () => Promise<Pairing.Identity>,
+  getIdentity: () => Promise<Identity>,
 ) {
   let socket: WebSocket | undefined;
   let peer: Peer | undefined;
@@ -112,7 +113,7 @@ export function startConnection(
   };
 
   const pair = async (input: string) => {
-    const code = Pairing.normalizeCode(input);
+    const code = normalizeCode(input);
     if (!code)
       throw new Error(
         "A pairing code has 8 letters and digits, like ABCD-1234.",

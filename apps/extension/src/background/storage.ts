@@ -1,11 +1,11 @@
-import { Pairing } from "@sessions/shared";
+import { type Identity, identity } from "@sessions/shared";
 
-export async function getIdentity(): Promise<Pairing.Identity> {
+export async function getIdentity(): Promise<Identity> {
   const { jwk } = await chrome.storage.local.get<{ jwk?: JsonWebKey }>("jwk");
-  if (jwk) return Pairing.identity(jwk);
-  const identity = await Pairing.identity();
-  await chrome.storage.local.set({ jwk: identity.jwk });
-  return identity;
+  if (jwk) return identity(jwk);
+  const fresh = await identity();
+  await chrome.storage.local.set({ jwk: fresh.jwk });
+  return fresh;
 }
 
 export async function getProfileId(): Promise<string | undefined> {

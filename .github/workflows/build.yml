@@ -1,0 +1,16 @@
+name: build
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun ci
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run --cwd apps/extension build
+      - run: bun run --cwd apps/sessions build

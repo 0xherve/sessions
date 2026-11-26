@@ -4,8 +4,8 @@ import {
   createPeer,
   ErrorCode,
   methodNotFound,
+  normalizeCode,
   PAIR_PORT,
-  Pairing,
   type PairParams,
   type Peer,
   RpcError,
@@ -40,7 +40,7 @@ export async function servePairing(code: string) {
           request: async (method, params) => {
             if (method !== "pair") throw methodNotFound(method);
             const { publicKey, profile, code: input } = params as PairParams;
-            if (Pairing.normalizeCode(input) !== code) {
+            if (normalizeCode(input) !== code) {
               strikes++;
               if (strikes >= CODE_MAX_STRIKES) resolveDone();
               throw new RpcError(
