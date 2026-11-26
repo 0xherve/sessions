@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { version } from "../../package.json";
 import { runMcp } from "../mcp";
 import { list } from "./list";
 import { pair } from "./pair";
@@ -11,7 +12,8 @@ const program = new Command();
 
 program
   .name("sessions")
-  .description("Give agents controlled access to your browser");
+  .description("Give agents controlled access to your browser")
+  .version(version, "-v, --version");
 
 program.command("pair").description("pair a browser").action(pair);
 

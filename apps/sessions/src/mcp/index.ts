@@ -7,7 +7,7 @@ import { registerTabTools } from "./tabs";
 
 export async function runMcp() {
   const server = new McpServer(
-    { name: "sessions", version: "0.1.0" },
+    { name: "sessions", version: "1.0.0" },
     {
       instructions:
         "Sessions gives you the user's real browser, but only the tabs they explicitly shared. Start with session_list, claim a session with session_use, read the page with page_snapshot, then act with page_click, page_type, page_select, page_press_key, page_navigate or page_navigate_back using refs from the snapshot. Actions return a fresh snapshot. In a group session, use tab_list, tab_new, tab_select and tab_close to work across tabs; page tools act on the active tab. Call session_release when done. The user can end a session at any time by detaching the debugger.",
