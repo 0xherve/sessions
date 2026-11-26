@@ -11,9 +11,10 @@ import {
   register,
   release,
 } from "../service";
+import { clearServicePid, writeServicePid } from "../state";
 
 export async function start() {
-  Bun.serve<Connection & { peer?: Peer }>({
+  const server = Bun.serve<Connection & { peer?: Peer }>({
     port: SERVICE_PORT,
     hostname: SERVICE_HOST,
     fetch: (request, server) => {
@@ -28,6 +29,7 @@ export async function start() {
     },
     websocket: {
       open(ws) {
+        ws.data.close = () => ws.close();
         register(ws.data);
       },
       close(ws) {
@@ -46,4 +48,12 @@ export async function start() {
   console.error(
     `Sessions service listening on ${SERVICE_HOST}:${SERVICE_PORT}`,
   );
+  await writeServicePid(process.pid);
+
+  const shutdown = () => {
+    server.stop(true);
+    void clearServicePid().then(() => process.exit(0));
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }

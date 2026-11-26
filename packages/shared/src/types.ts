@@ -33,6 +33,8 @@ export type HelloResult = { challenge: string };
 
 export type AuthParams = { signature: string };
 
+export type BrowserUnpairParams = { profileId: string };
+
 export type AgentHelloParams = { name: string };
 
 export type SessionUseParams = { sessionId: string };

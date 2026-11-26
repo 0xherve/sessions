@@ -1,6 +1,7 @@
 import {
   type AgentHelloParams,
   type AuthParams,
+  type BrowserUnpairParams,
   ErrorCode,
   type HelloParams,
   methodNotFound,
@@ -14,7 +15,7 @@ import {
   type SessionUseParams,
   verify,
 } from "@sessions/shared";
-import { loadBrowsers } from "./state";
+import { loadBrowsers, saveBrowsers } from "./state";
 
 export type Connection = {
   peer?: Peer;
@@ -22,6 +23,7 @@ export type Connection = {
   challenge?: string;
   agent?: string;
   claims?: Set<string>;
+  close?: () => void;
 };
 
 type Route = (connection: Connection, params: never) => unknown;
@@ -101,6 +103,28 @@ const agentHello = (connection: Connection, params: AgentHelloParams) => {
   };
 };
 
+const browserUnpair = async (
+  _connection: Connection,
+  params: BrowserUnpairParams,
+) => {
+  const browsers = await loadBrowsers();
+  delete browsers[params.profileId];
+  await saveBrowsers(browsers);
+  for (const [id, session] of sessions)
+    if (session.browserId === params.profileId) {
+      sessions.delete(id);
+      notifyAgents("session.ended", { sessionId: id });
+    }
+  for (const connection of connections)
+    if (connection.profileId === params.profileId) connection.close?.();
+  return null;
+};
+
+const serviceStop = () => {
+  setTimeout(() => process.kill(process.pid, "SIGTERM"), 100);
+  return null;
+};
+
 const lookup = (connection: Connection, sessionId: unknown) => {
   if (!connection.agent)
     throw new RpcError(
@@ -166,6 +190,8 @@ const sessionCommand = async (
 export const routes: Record<string, Route> = {
   hello,
   auth,
+  "browser.unpair": browserUnpair,
+  "service.stop": serviceStop,
   "agent.hello": agentHello,
   "session.use": sessionUse,
   "session.release": sessionRelease,
