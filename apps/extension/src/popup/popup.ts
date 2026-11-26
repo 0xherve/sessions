@@ -1,4 +1,4 @@
-import type { Action, State } from "../shared/messages";
+import type { Action, State } from "../messages";
 
 const views = ["unpaired", "ready"] as const;
 type View = (typeof views)[number];

@@ -1,0 +1,32 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun ci
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run --cwd apps/extension build
+      - run: |
+          cd apps/sessions
+          for target in linux-x64 darwin-arm64 windows-x64; do
+            bun build src/cli/main.ts --compile --target=bun-$target --outfile dist/sessions-$target
+          done
+      - run: cd apps/extension && zip -qr sessions-extension.zip dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          files: |
+            apps/extension/sessions-extension.zip
+            apps/sessions/dist/sessions-linux-x64
+            apps/sessions/dist/sessions-darwin-arm64
+            apps/sessions/dist/sessions-windows-x64.exe

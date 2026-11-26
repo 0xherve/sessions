@@ -4,7 +4,7 @@ import {
   type SessionAction,
   type SessionActionResult,
   type SessionInfo,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import { withAgent } from "./agent";
 
 export type Reply = { sessions?: SessionInfo[]; session?: SessionInfo };

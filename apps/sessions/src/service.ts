@@ -4,7 +4,7 @@ import {
   ErrorCode,
   type HelloParams,
   methodNotFound,
-  Pairing,
+  nonce,
   type Peer,
   RpcError,
   type SessionCommandParams,
@@ -12,7 +12,8 @@ import {
   type SessionRecord,
   type SessionReleaseParams,
   type SessionUseParams,
-} from "@sessions/protocol";
+  verify,
+} from "@sessions/shared";
 import { loadBrowsers } from "./state";
 
 export type Connection = {
@@ -68,7 +69,7 @@ const hello = async (connection: Connection, params: HelloParams) => {
   if (!paired)
     throw new RpcError(ErrorCode.Application, "Unknown browser, pair first");
   connection.profileId = params.profileId;
-  connection.challenge = Pairing.nonce();
+  connection.challenge = nonce();
   return { challenge: connection.challenge };
 };
 
@@ -82,8 +83,7 @@ const auth = async (connection: Connection, params: AuthParams) => {
     throw new RpcError(ErrorCode.Application, "Bad signature");
   const paired = (await loadBrowsers())[profileId];
   const ok =
-    paired &&
-    (await Pairing.verify(paired.public_key, params.signature, challenge));
+    paired && (await verify(paired.public_key, params.signature, challenge));
   if (!ok) throw new RpcError(ErrorCode.Application, "Bad signature");
   console.error(`connected: ${paired.browser} (${profileId})`);
   return null;

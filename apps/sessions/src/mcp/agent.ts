@@ -3,7 +3,7 @@ import {
   type Peer,
   SERVICE_HOST,
   SERVICE_PORT,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 
 let connection: { socket: WebSocket; peer: Peer } | undefined;
 let notification: ((method: string, params: unknown) => void) | undefined;

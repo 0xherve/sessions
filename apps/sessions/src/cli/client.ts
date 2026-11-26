@@ -1,4 +1,4 @@
-import { createPeer, SERVICE_HOST, SERVICE_PORT } from "@sessions/protocol";
+import { createPeer, SERVICE_HOST, SERVICE_PORT } from "@sessions/shared";
 
 export async function connect() {
   const ws = new WebSocket(`ws://${SERVICE_HOST}:${SERVICE_PORT}`);
