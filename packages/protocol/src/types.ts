@@ -37,9 +37,27 @@ export type AgentHelloParams = { name: string };
 
 export type SessionUseParams = { sessionId: string };
 
+export type SessionReleaseParams = { sessionId: string };
+
+export type SessionAction =
+  | { action: "snapshot" }
+  | { action: "navigate"; url: string }
+  | { action: "navigate_back" }
+  | { action: "click"; ref: string }
+  | { action: "type"; ref: string; text: string; submit?: boolean }
+  | { action: "select"; ref: string; values: string[] }
+  | { action: "press_key"; key: string }
+  | { action: "screenshot" }
+  | { action: "evaluate"; expression: string };
+
+export type SessionActionResult =
+  | { snapshot: string }
+  | { image: string }
+  | { value: unknown };
+
 export type SessionCommandParams = {
   sessionId: string;
-  command: { method: string; params?: Record<string, unknown> };
+  command: SessionAction;
 };
 
 export type Tab = {
