@@ -34,12 +34,60 @@ export function registerPageTools(server: McpServer) {
   );
 
   server.registerTool(
+    "page_navigate_forward",
+    {
+      description:
+        "Go forward in the claimed tab's history. Returns a fresh snapshot",
+      inputSchema: {},
+    },
+    async () => tool(() => command({ action: "navigate_forward" }))(),
+  );
+
+  server.registerTool(
+    "page_reload",
+    {
+      description: "Reload the claimed session's tab. Returns a fresh snapshot",
+      inputSchema: {},
+    },
+    async () => tool(() => command({ action: "reload" }))(),
+  );
+
+  server.registerTool(
+    "page_info",
+    {
+      description: "Get the current URL and title of the claimed session's tab",
+      inputSchema: {},
+    },
+    async () => tool(() => command({ action: "info" }))(),
+  );
+
+  server.registerTool(
     "page_screenshot",
     {
       description: "Capture a screenshot of the claimed session's tab",
       inputSchema: {},
     },
     async () => tool(() => command({ action: "screenshot" }))(),
+  );
+
+  server.registerTool(
+    "page_console",
+    {
+      description:
+        "Read console messages and uncaught page errors from the claimed tab since the last call. Recording starts with your first command on the tab",
+      inputSchema: {},
+    },
+    async () => tool(() => command({ action: "console" }))(),
+  );
+
+  server.registerTool(
+    "page_network_failures",
+    {
+      description:
+        "Read failed network requests (errors and HTTP 400+) from the claimed tab since the last call",
+      inputSchema: {},
+    },
+    async () => tool(() => command({ action: "network" }))(),
   );
 
   server.registerTool(

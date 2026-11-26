@@ -1,9 +1,11 @@
 import {
   createPeer,
   type Peer,
+  REQUEST_TIMEOUT_MS,
   SERVICE_HOST,
   SERVICE_PORT,
 } from "@sessions/shared";
+import { start } from "../cli/start";
 
 let connection: { socket: WebSocket; peer: Peer } | undefined;
 let notification: ((method: string, params: unknown) => void) | undefined;
@@ -14,8 +16,7 @@ export const onNotification = (
   notification = handler;
 };
 
-async function connect(): Promise<{ socket: WebSocket; peer: Peer }> {
-  if (connection?.socket.readyState === WebSocket.OPEN) return connection;
+async function open(): Promise<{ socket: WebSocket; peer: Peer }> {
   const socket = new WebSocket(`ws://${SERVICE_HOST}:${SERVICE_PORT}`);
   const peer = createPeer((out) => socket.send(out), {
     notification: (method, params) => notification?.(method, params),
@@ -26,7 +27,23 @@ async function connect(): Promise<{ socket: WebSocket; peer: Peer }> {
     socket.onerror = () =>
       fail(new Error("the sessions service is not running"));
   });
-  connection = { socket, peer };
+  await peer.request("agent.hello", { name: "agent" }, REQUEST_TIMEOUT_MS);
+  return { socket, peer };
+}
+
+let connecting: Promise<{ socket: WebSocket; peer: Peer }> | undefined;
+
+async function connect(): Promise<{ socket: WebSocket; peer: Peer }> {
+  if (connection?.socket.readyState === WebSocket.OPEN) return connection;
+  connecting ??= open()
+    .catch(async () => {
+      await start();
+      return open();
+    })
+    .finally(() => {
+      connecting = undefined;
+    });
+  connection = await connecting;
   return connection;
 }
 

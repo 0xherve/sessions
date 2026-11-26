@@ -1,3 +1,7 @@
+import { spawn } from "node:child_process";
+import { closeSync, mkdirSync, openSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
   createPeer,
   type Peer,
@@ -12,8 +16,38 @@ import {
   release,
 } from "../service";
 import { clearServicePid, writeServicePid } from "../state";
+import { connect } from "./client";
+
+const running = () =>
+  connect().then(
+    (hub) => {
+      hub.close();
+      return true;
+    },
+    () => false,
+  );
 
 export async function start() {
+  if (process.env.SESSIONS_SERVE) return serve();
+  if (await running()) return "service is already running";
+  const dir = join(homedir(), ".sessions");
+  mkdirSync(dir, { recursive: true });
+  const log = openSync(join(dir, "service.log"), "a");
+  const script = Bun.main.startsWith("/$bunfs/") ? [] : [Bun.main];
+  spawn(process.execPath, [...script, "start"], {
+    detached: true,
+    stdio: ["ignore", log, log],
+    env: { ...process.env, SESSIONS_SERVE: "1" },
+  }).unref();
+  closeSync(log);
+  for (let tries = 0; tries < 25; tries++) {
+    await Bun.sleep(200);
+    if (await running()) return "started the service";
+  }
+  throw new Error("service could not be started, see ~/.sessions/service.log");
+}
+
+async function serve() {
   const server = Bun.serve<Connection & { peer?: Peer }>({
     port: SERVICE_PORT,
     hostname: SERVICE_HOST,

@@ -123,6 +123,13 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-section[hidden] {
+button.small {
+  min-height: 28px;
+  padding: 2px 12px;
+  font-size: 12px;
+}
+
+section[hidden],
+button[hidden] {
   display: none;
 }

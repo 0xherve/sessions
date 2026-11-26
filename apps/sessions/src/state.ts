@@ -35,7 +35,10 @@ export const getServiceKey = () => {
   return serviceKey;
 };
 
-export type PairedBrowser = Profile & { paired_at: number };
+export type PairedBrowser = Profile & {
+  public_key: string;
+  paired_at: number;
+};
 
 export async function loadBrowsers(): Promise<Record<string, PairedBrowser>> {
   try {
@@ -50,10 +53,13 @@ export async function saveBrowsers(browsers: Record<string, PairedBrowser>) {
   await writeFile(stateFile, JSON.stringify(browsers, null, 2));
 }
 
-export async function addBrowser(profile: Profile): Promise<string> {
+export async function addBrowser(
+  publicKey: string,
+  profile: Profile,
+): Promise<string> {
   const browsers = await loadBrowsers();
   const id = generateId();
-  browsers[id] = { ...profile, paired_at: Date.now() };
+  browsers[id] = { ...profile, public_key: publicKey, paired_at: Date.now() };
   await saveBrowsers(browsers);
   return id;
 }

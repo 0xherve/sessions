@@ -40,7 +40,7 @@ export async function servePairing(code: string) {
         ws.data.peer ??= createPeer((out) => ws.send(out), {
           request: async (method, params) => {
             if (method !== "pair") throw methodNotFound(method);
-            const { profile, code: input } = params as PairParams;
+            const { publicKey, profile, code: input } = params as PairParams;
             if (normalizeCode(input) !== code) {
               strikes++;
               if (strikes >= CODE_MAX_STRIKES) resolveDone();
@@ -49,13 +49,16 @@ export async function servePairing(code: string) {
                 "That code isn't right.",
               );
             }
-            if (typeof profile?.browser !== "string")
+            if (
+              typeof publicKey !== "string" ||
+              typeof profile?.browser !== "string"
+            )
               throw new RpcError(
                 ErrorCode.InvalidParams,
                 "Bad pairing request",
               );
             const serviceKey = await getServiceKey();
-            const id = await addBrowser(profile);
+            const id = await addBrowser(publicKey, profile);
             paired = { id, browser: profile.browser };
             const result: PairResult = { id, publicKey: serviceKey.publicKey };
             return result;

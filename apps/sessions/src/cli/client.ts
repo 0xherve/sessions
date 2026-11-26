@@ -5,7 +5,7 @@ export async function connect() {
   await new Promise((ok, fail) => {
     ws.onopen = ok;
     ws.onerror = () =>
-      fail(new Error("service is offline — run sessions start"));
+      fail(new Error("service is not running, start it with sessions start"));
   });
   const peer = createPeer((data) => ws.send(data));
   ws.onmessage = (event) => void peer.receive(event.data as string);

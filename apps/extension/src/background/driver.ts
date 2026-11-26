@@ -5,22 +5,31 @@ import type {
   SessionRecord,
 } from "@sessions/shared";
 import { afterLoad, attach, attached, detach, queues, refs, send } from "./cdp";
+import { startLogs, takeConsole, takeFailures } from "./logs";
 import { shared } from "./sessions";
+import { isTabAction, runTabAction } from "./tabs";
 
 const TEXT_ROLES = new Set(["StaticText", "InlineTextBox", "text"]);
 
-const targetOf = async (sessionId: string) => {
+const recordOf = async (sessionId: string) => {
   const record = (await shared()).find((r) => r.id === sessionId);
   if (!record) throw new Error("No such session");
+  return record;
+};
+
+const targetOf = async (record: SessionRecord) => {
   if (record.kind === "tab") {
     if (!record.tabId) throw new Error("The shared tab is gone.");
     return record.tabId;
   }
+  if (record.groupId === undefined || record.groupId < 0)
+    throw new Error("The shared group is gone.");
   const [tab] = await chrome.tabs.query({
     groupId: record.groupId,
     active: true,
   });
-  if (!tab?.id) throw new Error("The group has no open tabs.");
+  if (!tab?.id)
+    throw new Error("No tab in the group is active. Call tab_select first");
   return tab.id;
 };
 
@@ -171,15 +180,16 @@ const navigate = async (tabId: number, url: string) => {
   });
 };
 
-const navigateBack = async (tabId: number) => {
+const navigateHistory = async (tabId: number, step: -1 | 1) => {
   const { currentIndex, entries } = (await send(
     tabId,
     "Page.getNavigationHistory",
   )) as { currentIndex: number; entries: { id: number }[] };
-  const previous = entries[currentIndex - 1];
-  if (!previous) throw new Error("There is no previous page");
+  const entry = entries[currentIndex + step];
+  if (!entry)
+    throw new Error(`There is no ${step < 0 ? "previous" : "next"} page`);
   await afterLoad(tabId, () =>
-    send(tabId, "Page.navigateToHistoryEntry", { entryId: previous.id }),
+    send(tabId, "Page.navigateToHistoryEntry", { entryId: entry.id }),
   );
 };
 
@@ -208,6 +218,17 @@ const perform = async (
     case "select":
       await selectOptions(tabId, nodeOf(tabId, command.ref), command.values);
       return snapshot(tabId);
+    case "upload":
+      await send(tabId, "DOM.setFileInputFiles", {
+        files: command.paths,
+        backendNodeId: nodeOf(tabId, command.ref),
+      }).catch((error: Error) => {
+        if (!/not allowed/i.test(error.message)) throw error;
+        throw new Error(
+          "Chrome blocked the upload. Ask the user to turn on 'Allow access to file URLs' for Sessions in chrome://extensions",
+        );
+      });
+      return snapshot(tabId);
     case "press_key":
       await afterLoad(tabId, () => pressKey(tabId, command.key), true);
       return snapshot(tabId);
@@ -215,8 +236,22 @@ const perform = async (
       await navigate(tabId, command.url);
       return snapshot(tabId);
     case "navigate_back":
-      await navigateBack(tabId);
+      await navigateHistory(tabId, -1);
       return snapshot(tabId);
+    case "navigate_forward":
+      await navigateHistory(tabId, 1);
+      return snapshot(tabId);
+    case "reload":
+      await afterLoad(tabId, () => send(tabId, "Page.reload"));
+      return snapshot(tabId);
+    case "console":
+      return { console: takeConsole(tabId) };
+    case "network":
+      return { failures: takeFailures(tabId) };
+    case "info": {
+      const tab = await chrome.tabs.get(tabId);
+      return { url: tab.url ?? "", title: tab.title ?? "" };
+    }
     case "screenshot": {
       const { data } = (await send(tabId, "Page.captureScreenshot", {
         format: "png",
@@ -248,7 +283,9 @@ export async function runCommand({
   sessionId,
   command,
 }: SessionCommandParams): Promise<SessionActionResult> {
-  const tabId = await targetOf(sessionId);
+  const record = await recordOf(sessionId);
+  if (isTabAction(command)) return runTabAction(record, command);
+  const tabId = await targetOf(record);
   const run = (queues.get(tabId) ?? Promise.resolve()).then(async () => {
     await attach(tabId);
     return perform(tabId, command);
@@ -275,6 +312,7 @@ export const detachSession = async (record: SessionRecord) => {
 };
 
 export function startDriver(onDetach: (tabId: number) => void) {
+  startLogs();
   chrome.debugger.onDetach.addListener((source) => {
     if (!source.tabId) return;
     attached.delete(source.tabId);

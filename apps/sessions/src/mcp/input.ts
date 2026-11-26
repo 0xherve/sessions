@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { command, tool } from "./tools";
@@ -11,6 +12,26 @@ export function registerInputTools(server: McpServer) {
       inputSchema: { ref: z.string().describe("ref from page_snapshot") },
     },
     async ({ ref }) => tool(() => command({ action: "click", ref }))(),
+  );
+
+  server.registerTool(
+    "page_upload",
+    {
+      description:
+        "Set files on a file input by ref from page_snapshot. Paths are on this computer. Returns a fresh snapshot",
+      inputSchema: {
+        ref: z.string().describe("ref of a file input from page_snapshot"),
+        paths: z.array(z.string()).min(1),
+      },
+    },
+    async ({ ref, paths }) =>
+      tool(async () => {
+        const files = paths.map((path) => resolve(path));
+        for (const file of files)
+          if (!(await Bun.file(file).exists()))
+            throw new Error(`no such file: ${file}`);
+        return command({ action: "upload", ref, paths: files });
+      })(),
   );
 
   server.registerTool(

@@ -1,10 +1,12 @@
 import {
   type AgentHelloParams,
+  type AuthParams,
   type BrowserUnpairParams,
   ErrorCode,
   type HelloParams,
   type HelloResult,
   methodNotFound,
+  nonce,
   type Peer,
   RpcError,
   type SessionCommandParams,
@@ -12,12 +14,14 @@ import {
   type SessionRecord,
   type SessionReleaseParams,
   type SessionUseParams,
+  verify,
 } from "@sessions/shared";
 import { getServiceKey, loadBrowsers, saveBrowsers } from "./state";
 
 export type Connection = {
   peer?: Peer;
   profileId?: string;
+  challenge?: string;
   agent?: string;
   claims?: Set<string>;
   close?: () => void;
@@ -65,14 +69,32 @@ const hello = async (
   connection: Connection,
   params: HelloParams,
 ): Promise<HelloResult> => {
-  if (typeof params.profileId !== "string" || typeof params.nonce !== "string")
+  if (typeof params.nonce !== "string")
     throw new RpcError(ErrorCode.InvalidParams, "Bad hello");
+  connection.challenge = nonce();
+  return {
+    signature: await (await getServiceKey()).sign(params.nonce),
+    challenge: connection.challenge,
+  };
+};
+
+const auth = async (connection: Connection, params: AuthParams) => {
+  if (
+    typeof params.profileId !== "string" ||
+    typeof params.signature !== "string"
+  )
+    throw new RpcError(ErrorCode.InvalidParams, "Bad auth");
+  const challenge = connection.challenge;
+  connection.challenge = undefined;
+  if (!challenge) throw new RpcError(ErrorCode.Application, "Bad signature");
   const paired = (await loadBrowsers())[params.profileId];
   if (!paired)
     throw new RpcError(ErrorCode.Application, "Unknown browser, pair first");
+  if (!(await verify(paired.public_key, params.signature, challenge)))
+    throw new RpcError(ErrorCode.Application, "Bad signature");
   connection.profileId = params.profileId;
   console.error(`connected: ${paired.browser} (${params.profileId})`);
-  return { signature: await (await getServiceKey()).sign(params.nonce) };
+  return null;
 };
 
 const agentHello = (connection: Connection, params: AgentHelloParams) => {
@@ -173,6 +195,7 @@ const sessionCommand = async (
 
 export const routes: Record<string, Route> = {
   hello,
+  auth,
   "browser.unpair": browserUnpair,
   "service.stop": serviceStop,
   "agent.hello": agentHello,

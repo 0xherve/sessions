@@ -24,13 +24,16 @@ export type SessionInfo = {
 
 export type PairParams = {
   profile: Profile;
+  publicKey: string;
   code: string;
 };
 
 export type PairResult = { id: string; publicKey: string };
 
-export type HelloParams = { profileId: string; nonce: string };
-export type HelloResult = { signature: string };
+export type HelloParams = { nonce: string };
+export type HelloResult = { signature: string; challenge: string };
+
+export type AuthParams = { profileId: string; signature: string };
 
 export type BrowserUnpairParams = { profileId: string };
 
@@ -40,13 +43,35 @@ export type SessionUseParams = { sessionId: string };
 
 export type SessionReleaseParams = { sessionId: string };
 
+export type ConsoleEntry = { level: string; text: string };
+
+export type NetworkFailure = {
+  url: string;
+  method: string;
+  status?: number;
+  error?: string;
+};
+
+export type TabAction =
+  | { action: "tab_list" }
+  | { action: "tab_new"; url?: string }
+  | { action: "tab_select"; tabId: number }
+  | { action: "tab_close"; tabId: number };
+
 export type SessionAction =
+  | TabAction
   | { action: "snapshot" }
   | { action: "navigate"; url: string }
   | { action: "navigate_back" }
+  | { action: "navigate_forward" }
+  | { action: "reload" }
+  | { action: "info" }
+  | { action: "console" }
+  | { action: "network" }
   | { action: "click"; ref: string }
   | { action: "type"; ref: string; text: string; submit?: boolean }
   | { action: "select"; ref: string; values: string[] }
+  | { action: "upload"; ref: string; paths: string[] }
   | { action: "press_key"; key: string }
   | { action: "screenshot" }
   | { action: "evaluate"; expression: string };
@@ -54,7 +79,11 @@ export type SessionAction =
 export type SessionActionResult =
   | { snapshot: string }
   | { image: string }
-  | { value: unknown };
+  | { value: unknown }
+  | { url: string; title: string }
+  | { tabs: Tab[] }
+  | { console: ConsoleEntry[] }
+  | { failures: NetworkFailure[] };
 
 export type SessionCommandParams = {
   sessionId: string;
@@ -65,6 +94,7 @@ export type Tab = {
   id: number;
   url: string;
   title: string;
+  active: boolean;
 };
 
 export type Session = {
