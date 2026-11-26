@@ -1,4 +1,4 @@
-import { Pairing } from "@sessions/protocol";
+import { Pairing } from "@sessions/shared";
 import { servePairing } from "../pairing";
 
 export async function pair() {

@@ -12,7 +12,7 @@ import {
   type SessionRecord,
   type SessionReleaseParams,
   type SessionUseParams,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import { loadBrowsers } from "./state";
 
 export type Connection = {

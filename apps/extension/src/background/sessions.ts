@@ -1,4 +1,4 @@
-import { Pairing, type SessionRecord } from "@sessions/protocol";
+import { Pairing, type SessionRecord } from "@sessions/shared";
 
 const storage = chrome.storage.session;
 

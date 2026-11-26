@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Pairing, type Profile } from "@sessions/protocol";
+import { Pairing, type Profile } from "@sessions/shared";
 
 const stateFile = join(homedir(), ".sessions", "profiles.json");
 

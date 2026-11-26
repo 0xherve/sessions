@@ -10,7 +10,7 @@ import {
   type Peer,
   RpcError,
   SERVICE_HOST,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import { addBrowser } from "./state";
 
 type Paired = { id: string; browser: string };

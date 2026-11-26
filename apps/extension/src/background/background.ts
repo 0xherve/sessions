@@ -1,5 +1,5 @@
-import type { Peer, SessionRecord } from "@sessions/protocol";
-import { POLL_PERIOD_MINUTES } from "@sessions/protocol";
+import type { Peer, SessionRecord } from "@sessions/shared";
+import { POLL_PERIOD_MINUTES } from "@sessions/shared";
 import type { Action, State } from "../shared/messages";
 import { startConnection } from "./connection";
 import { detachSession, startDriver } from "./driver";

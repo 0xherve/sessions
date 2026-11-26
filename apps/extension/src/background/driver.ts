@@ -3,7 +3,7 @@ import type {
   SessionActionResult,
   SessionCommandParams,
   SessionRecord,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import { shared } from "./sessions";
 
 const attached = new Set<number>();

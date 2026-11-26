@@ -3,7 +3,7 @@ import {
   type Peer,
   SERVICE_HOST,
   SERVICE_PORT,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import {
   type Connection,
   handle,

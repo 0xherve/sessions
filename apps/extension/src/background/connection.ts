@@ -10,7 +10,7 @@ import {
   SERVICE_HOST,
   SERVICE_PORT,
   type SessionCommandParams,
-} from "@sessions/protocol";
+} from "@sessions/shared";
 import { runCommand } from "./driver";
 import { getProfileId, saveProfileId } from "./storage";
 

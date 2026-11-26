@@ -14,7 +14,7 @@
     "apps/extension": {
       "name": "@sessions/extension",
       "dependencies": {
-        "@sessions/protocol": "workspace:*",
+        "@sessions/shared": "workspace:*",
         "nanoid": "^6.0.2",
       },
     },
@@ -25,14 +25,14 @@
       },
       "dependencies": {
         "@modelcontextprotocol/sdk": "^1.32.2",
-        "@sessions/protocol": "workspace:*",
+        "@sessions/shared": "workspace:*",
         "commander": "^15.1.0",
         "nanoid": "^6.0.2",
         "zod": "^4.6.7",
       },
     },
-    "packages/protocol": {
-      "name": "@sessions/protocol",
+    "packages/shared": {
+      "name": "@sessions/shared",
       "dependencies": {
         "nanoid": "^6.0.2",
       },
@@ -67,7 +67,7 @@
 
     "@sessions/extension": ["@sessions/extension@workspace:apps/extension"],
 
-    "@sessions/protocol": ["@sessions/protocol@workspace:packages/protocol"],
+    "@sessions/shared": ["@sessions/shared@workspace:packages/shared"],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 

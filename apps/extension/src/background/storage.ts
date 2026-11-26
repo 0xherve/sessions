@@ -1,4 +1,4 @@
-import { Pairing } from "@sessions/protocol";
+import { Pairing } from "@sessions/shared";
 
 export async function getIdentity(): Promise<Pairing.Identity> {
   const { jwk } = await chrome.storage.local.get<{ jwk?: JsonWebKey }>("jwk");
