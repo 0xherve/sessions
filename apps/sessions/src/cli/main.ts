@@ -1,8 +1,11 @@
 import { Command } from "commander";
 import { runMcp } from "../mcp/server";
+import { list } from "./list";
 import { pair } from "./pair";
 import { start } from "./start";
 import { status } from "./status";
+import { stop } from "./stop";
+import { unpair } from "./unpair";
 
 const program = new Command();
 
@@ -24,5 +27,19 @@ program
   .description("show what's paired")
   .option("--json", "machine-readable output")
   .action(status);
+
+program
+  .command("list")
+  .description("show shared sessions")
+  .option("--json", "machine-readable output")
+  .action(list);
+
+program.command("stop").description("stop the running service").action(stop);
+
+program
+  .command("unpair")
+  .description("remove a paired browser")
+  .argument("<id>")
+  .action(unpair);
 
 program.parse();

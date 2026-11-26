@@ -1,9 +1,10 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { generateId, type Profile } from "@sessions/shared";
 
 const stateFile = join(homedir(), ".sessions", "profiles.json");
+const pidFile = join(homedir(), ".sessions", "service.pid");
 
 export type PairedBrowser = Profile & {
   public_key: string;
@@ -33,3 +34,19 @@ export async function addBrowser(
   await saveBrowsers(browsers);
   return id;
 }
+
+export async function writeServicePid(pid: number) {
+  await mkdir(join(homedir(), ".sessions"), { recursive: true });
+  await writeFile(pidFile, String(pid));
+}
+
+export async function readServicePid(): Promise<number | undefined> {
+  try {
+    const pid = Number((await readFile(pidFile, "utf8")).trim());
+    return Number.isInteger(pid) && pid > 0 ? pid : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export const clearServicePid = () => rm(pidFile, { force: true });
