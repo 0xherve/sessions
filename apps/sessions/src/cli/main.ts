@@ -15,7 +15,13 @@ program
 
 program.command("pair").description("pair a browser").action(pair);
 
-program.command("start").description("run the service").action(start);
+program
+  .command("start")
+  .description("run the Sessions service")
+  .action(async () => {
+    const message = await start();
+    if (message) console.log(message);
+  });
 
 program
   .command("mcp")
@@ -42,4 +48,7 @@ program
   .argument("<id>")
   .action(unpair);
 
-program.parse();
+program.parseAsync().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});

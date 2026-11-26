@@ -29,7 +29,7 @@ const running = () =>
 
 export async function start() {
   if (process.env.SESSIONS_SERVE) return serve();
-  if (await running()) return console.error("service is already running");
+  if (await running()) return "service is already running";
   const dir = join(homedir(), ".sessions");
   mkdirSync(dir, { recursive: true });
   const log = openSync(join(dir, "service.log"), "a");
@@ -42,7 +42,7 @@ export async function start() {
   closeSync(log);
   for (let tries = 0; tries < 25; tries++) {
     await Bun.sleep(200);
-    if (await running()) return console.error("started the service");
+    if (await running()) return "started the service";
   }
   throw new Error("service could not be started, see ~/.sessions/service.log");
 }

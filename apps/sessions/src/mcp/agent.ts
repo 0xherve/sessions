@@ -1,6 +1,7 @@
 import {
   createPeer,
   type Peer,
+  REQUEST_TIMEOUT_MS,
   SERVICE_HOST,
   SERVICE_PORT,
 } from "@sessions/shared";
@@ -26,6 +27,7 @@ async function open(): Promise<{ socket: WebSocket; peer: Peer }> {
     socket.onerror = () =>
       fail(new Error("the sessions service is not running"));
   });
+  await peer.request("agent.hello", { name: "agent" }, REQUEST_TIMEOUT_MS);
   return { socket, peer };
 }
 
