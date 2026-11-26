@@ -7,11 +7,12 @@ import {
   normalizeCode,
   PAIR_PORT,
   type PairParams,
+  type PairResult,
   type Peer,
   RpcError,
   SERVICE_HOST,
 } from "@sessions/shared";
-import { addBrowser } from "./state";
+import { addBrowser, getServiceKey } from "./state";
 
 type Paired = { id: string; browser: string };
 
@@ -39,7 +40,7 @@ export async function servePairing(code: string) {
         ws.data.peer ??= createPeer((out) => ws.send(out), {
           request: async (method, params) => {
             if (method !== "pair") throw methodNotFound(method);
-            const { publicKey, profile, code: input } = params as PairParams;
+            const { profile, code: input } = params as PairParams;
             if (normalizeCode(input) !== code) {
               strikes++;
               if (strikes >= CODE_MAX_STRIKES) resolveDone();
@@ -48,17 +49,16 @@ export async function servePairing(code: string) {
                 "That code isn't right.",
               );
             }
-            if (
-              typeof publicKey !== "string" ||
-              typeof profile?.browser !== "string"
-            )
+            if (typeof profile?.browser !== "string")
               throw new RpcError(
                 ErrorCode.InvalidParams,
                 "Bad pairing request",
               );
-            const id = await addBrowser(publicKey, profile);
+            const serviceKey = await getServiceKey();
+            const id = await addBrowser(profile);
             paired = { id, browser: profile.browser };
-            return { id };
+            const result: PairResult = { id, publicKey: serviceKey.publicKey };
+            return result;
           },
         });
         void ws.data.peer.receive(String(data)).then(() => {

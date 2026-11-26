@@ -1,15 +1,41 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { generateId, type Profile } from "@sessions/shared";
+import {
+  generateId,
+  type Identity,
+  identity,
+  type Profile,
+} from "@sessions/shared";
 
-const stateFile = join(homedir(), ".sessions", "profiles.json");
-const pidFile = join(homedir(), ".sessions", "service.pid");
+const stateDir = join(homedir(), ".sessions");
+const stateFile = join(stateDir, "profiles.json");
+const pidFile = join(stateDir, "service.pid");
+const keyFile = join(stateDir, "service.key");
 
-export type PairedBrowser = Profile & {
-  public_key: string;
-  paired_at: number;
+let serviceKey: Promise<Identity> | undefined;
+
+const loadServiceKey = async () => {
+  try {
+    return await identity(JSON.parse(await readFile(keyFile, "utf8")));
+  } catch {
+    const fresh = await identity();
+    await mkdir(stateDir, { recursive: true });
+    await chmod(stateDir, 0o700);
+    await writeFile(keyFile, JSON.stringify(fresh.jwk), {
+      mode: 0o600,
+      flag: "wx",
+    });
+    return fresh;
+  }
 };
+
+export const getServiceKey = () => {
+  serviceKey ??= loadServiceKey();
+  return serviceKey;
+};
+
+export type PairedBrowser = Profile & { paired_at: number };
 
 export async function loadBrowsers(): Promise<Record<string, PairedBrowser>> {
   try {
@@ -24,13 +50,10 @@ export async function saveBrowsers(browsers: Record<string, PairedBrowser>) {
   await writeFile(stateFile, JSON.stringify(browsers, null, 2));
 }
 
-export async function addBrowser(
-  publicKey: string,
-  profile: Profile,
-): Promise<string> {
+export async function addBrowser(profile: Profile): Promise<string> {
   const browsers = await loadBrowsers();
   const id = generateId();
-  browsers[id] = { ...profile, public_key: publicKey, paired_at: Date.now() };
+  browsers[id] = { ...profile, paired_at: Date.now() };
   await saveBrowsers(browsers);
   return id;
 }

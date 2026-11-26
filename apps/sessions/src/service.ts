@@ -1,11 +1,10 @@
 import {
   type AgentHelloParams,
-  type AuthParams,
   type BrowserUnpairParams,
   ErrorCode,
   type HelloParams,
+  type HelloResult,
   methodNotFound,
-  nonce,
   type Peer,
   RpcError,
   type SessionCommandParams,
@@ -13,14 +12,12 @@ import {
   type SessionRecord,
   type SessionReleaseParams,
   type SessionUseParams,
-  verify,
 } from "@sessions/shared";
-import { loadBrowsers, saveBrowsers } from "./state";
+import { getServiceKey, loadBrowsers, saveBrowsers } from "./state";
 
 export type Connection = {
   peer?: Peer;
   profileId?: string;
-  challenge?: string;
   agent?: string;
   claims?: Set<string>;
   close?: () => void;
@@ -64,31 +61,18 @@ const notifyAgents = (method: string, params: unknown) => {
     if (connection.agent) connection.peer?.notify(method, params);
 };
 
-const hello = async (connection: Connection, params: HelloParams) => {
-  if (typeof params.profileId !== "string")
+const hello = async (
+  connection: Connection,
+  params: HelloParams,
+): Promise<HelloResult> => {
+  if (typeof params.profileId !== "string" || typeof params.nonce !== "string")
     throw new RpcError(ErrorCode.InvalidParams, "Bad hello");
   const paired = (await loadBrowsers())[params.profileId];
   if (!paired)
     throw new RpcError(ErrorCode.Application, "Unknown browser, pair first");
   connection.profileId = params.profileId;
-  connection.challenge = nonce();
-  return { challenge: connection.challenge };
-};
-
-const auth = async (connection: Connection, params: AuthParams) => {
-  if (typeof params.signature !== "string")
-    throw new RpcError(ErrorCode.InvalidParams, "Bad auth");
-  const challenge = connection.challenge;
-  const profileId = connection.profileId;
-  connection.challenge = undefined;
-  if (!challenge || !profileId)
-    throw new RpcError(ErrorCode.Application, "Bad signature");
-  const paired = (await loadBrowsers())[profileId];
-  const ok =
-    paired && (await verify(paired.public_key, params.signature, challenge));
-  if (!ok) throw new RpcError(ErrorCode.Application, "Bad signature");
-  console.error(`connected: ${paired.browser} (${profileId})`);
-  return null;
+  console.error(`connected: ${paired.browser} (${params.profileId})`);
+  return { signature: await (await getServiceKey()).sign(params.nonce) };
 };
 
 const agentHello = (connection: Connection, params: AgentHelloParams) => {
@@ -189,7 +173,6 @@ const sessionCommand = async (
 
 export const routes: Record<string, Route> = {
   hello,
-  auth,
   "browser.unpair": browserUnpair,
   "service.stop": serviceStop,
   "agent.hello": agentHello,
