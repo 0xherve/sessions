@@ -57,12 +57,24 @@ let claimed: string | undefined;
 
 export const getClaimed = () => claimed;
 
+let ended: string | undefined;
+
 export const setClaimed = (id: string | undefined) => {
   claimed = id;
+  ended = undefined;
+};
+
+export const endClaimed = (reason?: string) => {
+  claimed = undefined;
+  ended = reason ? `session ended: ${reason}` : "session ended";
 };
 
 export const requireClaimed = () => {
-  if (!claimed) throw new Error("no session claimed — call session_use first");
+  if (!claimed) {
+    const message = ended ?? "no session claimed — call session_use first";
+    ended = undefined;
+    throw new Error(message);
+  }
   return claimed;
 };
 

@@ -1,15 +1,23 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { onNotification } from "./agent";
-import { call, getClaimed, requireClaimed, setClaimed, tool } from "./tools";
+import {
+  call,
+  endClaimed,
+  getClaimed,
+  requireClaimed,
+  setClaimed,
+  tool,
+} from "./tools";
 
 export function registerSessionTools(server: McpServer) {
   onNotification((method, params) => {
-    if (
-      method === "session.ended" &&
-      (params as { sessionId: string }).sessionId === getClaimed()
-    )
-      setClaimed(undefined);
+    if (method !== "session.ended") return;
+    const { sessionId, reason } = params as {
+      sessionId: string;
+      reason?: string;
+    };
+    if (sessionId === getClaimed()) endClaimed(reason);
   });
 
   server.registerTool(

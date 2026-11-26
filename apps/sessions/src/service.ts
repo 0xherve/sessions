@@ -219,9 +219,12 @@ export const handleNotification = (
     notifyAgents("session.created", { session });
   }
   if (method === "session.ended") {
-    const { sessionId } = params as { sessionId: string };
+    const { sessionId, reason } = params as {
+      sessionId: string;
+      reason?: string;
+    };
     sessions.delete(sessionId);
-    notifyAgents("session.ended", { sessionId });
+    notifyAgents("session.ended", { sessionId, reason });
   }
 };
 

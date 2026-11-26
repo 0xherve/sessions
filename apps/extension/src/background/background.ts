@@ -69,7 +69,9 @@ const events = {
     peer = undefined;
     setState({ connection: "paired", error: null });
     void shared()
-      .then((records) => Promise.all(records.map(endSession)))
+      .then((records) =>
+        Promise.all(records.map((record) => endSession(record))),
+      )
       .catch(() => {});
   },
   online: (connected: Peer) => {
@@ -85,18 +87,18 @@ startSessions({
     peer?.notify("session.ended", { sessionId: session.id });
   },
 });
-startDriver((tabId) => {
+startDriver((tabId, reason) => {
   void sessionForTab(tabId)
     .then((session) => {
-      if (session) return endSession(session);
+      if (session) return endSession(session, reason);
     })
     .catch(() => {});
 });
 
-async function endSession(session: SessionRecord) {
+async function endSession(session: SessionRecord, reason?: string) {
   try {
     await unshare(session.id);
-    peer?.notify("session.ended", { sessionId: session.id });
+    peer?.notify("session.ended", { sessionId: session.id, reason });
     await detachSession(session);
   } finally {
     setState(state);
@@ -137,7 +139,7 @@ async function act(action: Action): Promise<void> {
       lastFocusedWindow: true,
     });
     const session = tab?.id ? await sessionForTab(tab.id) : undefined;
-    if (session) await endSession(session);
+    if (session) await endSession(session, "stopped_by_user");
   }
 }
 

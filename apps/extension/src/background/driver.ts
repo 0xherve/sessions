@@ -88,6 +88,20 @@ const nodeOf = (tabId: number, ref: string) => {
   return backendNodeId;
 };
 
+const STALE_NODE = /detached from document|No node with given id/i;
+
+const staleRef = (command: SessionAction, error: unknown) => {
+  if (
+    "ref" in command &&
+    error instanceof Error &&
+    STALE_NODE.test(error.message)
+  )
+    return new Error(
+      `ref ${command.ref} is stale (the page changed). Take a new snapshot.`,
+    );
+  return error;
+};
+
 const KEYS: Record<string, { code: string; keyCode: number; text?: string }> = {
   Enter: { code: "Enter", keyCode: 13, text: "\r" },
   Escape: { code: "Escape", keyCode: 27 },
@@ -288,7 +302,9 @@ export async function runCommand({
   const tabId = await targetOf(record);
   const run = (queues.get(tabId) ?? Promise.resolve()).then(async () => {
     await attach(tabId);
-    return perform(tabId, command);
+    return perform(tabId, command).catch((error) => {
+      throw staleRef(command, error);
+    });
   });
   const tail = run.then(
     () => {},
@@ -311,12 +327,12 @@ export const detachSession = async (record: SessionRecord) => {
       await detach(tabId).catch(() => {});
 };
 
-export function startDriver(onDetach: (tabId: number) => void) {
+export function startDriver(onDetach: (tabId: number, reason: string) => void) {
   startLogs();
-  chrome.debugger.onDetach.addListener((source) => {
+  chrome.debugger.onDetach.addListener((source, reason) => {
     if (!source.tabId) return;
     attached.delete(source.tabId);
     refs.delete(source.tabId);
-    onDetach(source.tabId);
+    onDetach(source.tabId, reason);
   });
 }

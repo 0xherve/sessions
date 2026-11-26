@@ -1,5 +1,6 @@
 {
   "name": "sessions",
+  "version": "1.0.0",
   "description": "Give agents controlled access to your browser",
   "private": true,
   "type": "module",
